@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskTree - Gestor Jerárquico de Tareas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>🌳 TaskTree</h1>
+                    <p>Organiza tus tareas con jerarquías infinitas</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="selectors-container">
+                <div class="selector-group">
+                    <label for="scenarioSelect">Escenario:</label>
+                    <div class="selector-with-buttons">
+                        <select id="scenarioSelect" class="selector">
+                            <option value="default">🏠 Por defecto</option>
+                            <option value="work">💼 Trabajo</option>
+                            <option value="personal">👤 Personal</option>
+                        </select>
+                        <button class="manage-btn" data-modal="scenario" title="Gestionar Escenarios">⚙️</button>
+                    </div>
+                </div>
+                <div class="selector-group">
+                    <label for="projectSelect">Proyecto:</label>
+                    <div class="selector-with-buttons">
+                        <select id="projectSelect" class="selector">
+                            <option value="none">📋 Sin proyecto</option>
+                            <option value="web">🌐 Proyecto Web</option>
+                            <option value="learning">📚 Aprendizaje</option>
+                        </select>
+                        <button class="manage-btn" data-modal="project" title="Gestionar Proyectos">⚙️</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number" id="totalTasks">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="completedTasks">0</div>
+                    <div class="stat-label">Completadas</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="pendingTasks">0</div>
+                    <div class="stat-label">Pendientes</div>
+                </div>
+            </div>
+
+            <!-- Filtros de tareas -->
+            <div class="filter-container">
+                <div class="filter-group">
+                    <div class="filter-section">
+                        <div class="filter-header">
+                            <label class="filter-label">Vista:</label>
+                            <div class="expand-collapse-control" id="expandCollapseControl" style="display: none;">
+                                <button class="expand-collapse-btn" id="expandCollapseBtn" onclick="taskManager.toggleAllTasks()">
+                                    <span>▼ Contraer todas</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="filter-buttons">
+                            <button class="filter-btn active" data-filter="all" onclick="taskManager.applyFilter('all')">Todas</button>
+                            <button class="filter-btn" data-filter="today" onclick="taskManager.applyFilter('today')">Hoy</button>
+                            <button class="filter-btn" data-filter="tomorrow" onclick="taskManager.applyFilter('tomorrow')">Mañana</button>
+                            <button class="filter-btn" data-filter="overdue" onclick="taskManager.applyFilter('overdue')">Vencido</button>
+                            <button class="filter-btn" data-filter="pending" onclick="taskManager.applyFilter('pending')">Pendientes</button>
+                            <button class="filter-btn" data-filter="completed" onclick="taskManager.applyFilter('completed')">Completadas</button>
+                        </div>
+                    </div>
+                    <div class="filter-section">
+                        <label class="filter-label">Etiquetas:</label>
+                        <div class="filter-tags" id="filterTags">
+                            <span class="no-tags-message">No hay etiquetas disponibles</span>
+                        </div>
+                    </div>
+                    <div class="filter-section">
+                        <label class="filter-label">Ordenar:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn" data-sort="dueDate" onclick="taskManager.toggleSort('dueDate')">Por Fecha</button>
+                            <button class="filter-btn" data-sort="priority" onclick="taskManager.toggleSort('priority')">Por Prioridad</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barra de acciones múltiples -->
+            <div class="multi-select-bar" id="multiSelectBar" style="display: none;">
+                <div class="selected-count">
+                    <span id="selectedCount">0</span> tareas seleccionadas
+                </div>
+                <div class="bulk-actions">
+                    <button class="bulk-action-btn complete-btn" onclick="taskManager.bulkComplete()">
+                        ✓ Completar
+                    </button>
+                    <button class="bulk-action-btn duplicate-btn" onclick="taskManager.bulkDuplicate()">
+                        📋 Duplicar
+                    </button>
+                    <button class="bulk-action-btn delete-btn" onclick="taskManager.bulkDelete()">
+                        🗑️ Eliminar
+                    </button>
+                    <button class="bulk-action-btn clear-btn" onclick="taskManager.clearSelection()">
+                        ✕ Limpiar selección
+                    </button>
+                </div>
+            </div>
+
+            <form class="add-task-form" id="addTaskForm">
+                <input 
+                    type="text" 
+                    class="task-input" 
+                    id="taskInput" 
+                    placeholder="Añade una nueva tarea..."
+                    required
+                >
+                <button type="submit" class="add-btn">Añadir Tarea</button>
+            </form>
+
+            <div id="taskContainer">
+                <ul class="task-list" id="taskList"></ul>
+                
+                <div class="empty-state" id="emptyState">
+                    <h3>¡Comienza a organizar tus tareas!</h3>
+                    <p>Crea tu primera tarea y construye tu árbol de productividad</p>
+                </div>
+            </div>
+
+            <!-- Assistant Module Container -->
+            <div id="assistantContainer" class="assistant-container">
+                <div class="assistant-header">
+                    <h2>🤖 Asistente IA</h2>
+                    <div class="assistant-controls">
+                        <button id="toggleAssistant" class="toggle-btn">Mostrar</button>
+                        <button id="aiConfigBtn" class="config-btn" onclick="taskManager.showAIConfigModal()">⚙️</button>
+                    </div>
+                </div>
+                
+                <div id="assistantContent" class="assistant-content" style="display: none;">
+                    <!-- Module Selection -->
+                    <div class="module-selector">
+                        <div class="module-option" data-module="general" onclick="taskManager.selectModule('general')">
+                            <span class="module-icon">💬</span>
+                            <span class="module-name">General</span>
+                        </div>
+                        <div class="module-option active" data-module="tasks" onclick="taskManager.selectModule('tasks')">
+                            <span class="module-icon">📋</span>
+                            <span class="module-name">Tareas</span>
+                        </div>
+                    </div>
+
+                    <!-- Context Display (only visible for tasks module) -->
+                    <div id="context-display" class="context-display">
+                        <div class="current-context">
+                            <span class="context-info">
+                                <strong>Contexto actual:</strong> 
+                                <span id="current-scenario">Por defecto</span> → 
+                                <span id="current-project">Sin proyecto</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Chat Interface -->
+                    <div class="chat-container">
+                        <!-- Chat Toolbar -->
+                        <div class="chat-toolbar">
+                            <div class="chat-search">
+                                <input type="text" id="chatSearchInput" placeholder="Buscar en chat..." 
+                                       onkeyup="if(event.key==='Enter') taskManager.searchInChat(this.value)">
+                                <button onclick="taskManager.searchInChat(document.getElementById('chatSearchInput').value)" 
+                                        class="search-btn">🔍</button>
+                            </div>
+                            <div class="chat-actions">
+                                <button onclick="taskManager.exportChatHistory()" class="toolbar-btn" title="Exportar chat">📤</button>
+                                <button onclick="taskManager.importChatHistory()" class="toolbar-btn" title="Importar chat">📥</button>
+                                <button onclick="taskManager.clearChatHistory()" class="toolbar-btn danger" title="Limpiar chat">🗑️</button>
+                            </div>
+                        </div>
+                        
+                        <div id="chatMessages" class="chat-messages"></div>
+                        <div class="chat-input-container">
+                            <input type="text" id="chatInput" class="chat-input" placeholder="Escribe tu mensaje aquí...">
+                            <button id="sendButton" class="send-btn" onclick="taskManager.sendMessage()">Enviar</button>
+                        </div>
+                    </div>
+
+                    <!-- AI Stats -->
+                    <div class="ai-stats">
+                        <button class="stats-btn" onclick="taskManager.showAIStatsModal()">
+                            📊 Ver estadísticas de uso
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drag indicator -->
+    <div id="drag-indicator" class="drag-indicator" style="display: none;">
+        <div class="drag-line"></div>
+        <span class="drag-text">📝 Soltar para mover aquí</span>
+    </div>
+
+    <!-- Modal unificado -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal</h3>
+                <button class="close-btn" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
