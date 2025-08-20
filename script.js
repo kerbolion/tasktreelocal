@@ -273,49 +273,91 @@ class TaskManager {
     // handleSubmit - Termina Aqui
 
     // handleKeydown - Inicia Aqui
-    handleKeydown(e) {
-        // Manejar Enter en el chat del asistente
-        if (e.key === 'Enter' && e.target.id === 'chatInput') {
-            e.preventDefault();
-            this.sendMessage();
-            return;
+handleKeydown(e) {
+    // Manejar Enter en el chat del asistente con soporte para múltiples líneas
+    if (e.target.id === 'chatInput') {
+        if (e.key === 'Enter') {
+            if (e.shiftKey) {
+                // Shift+Enter: permitir salto de línea y redimensionar inmediatamente
+                // No preventDefault() para permitir el salto de línea
+                setTimeout(() => {
+                    this.autoResizeChatInput(e.target);
+                }, 0);
+                return;
+            } else {
+                // Enter solo: enviar mensaje
+                e.preventDefault();
+                this.sendMessage();
+                return;
+            }
         }
         
-        // Atajos de markdown para el editor de descripción
-        if (e.target.classList.contains('markdown-editor-content')) {
-            this.handleMarkdownShortcuts(e);
-            
-            // Actualizar estado de botones después de teclas de navegación
+        // También redimensionar en otras teclas que puedan cambiar el contenido
+        if (e.key === 'Backspace' || e.key === 'Delete') {
             setTimeout(() => {
-                this.updateButtonStates(e.target);
-            }, 10);
+                this.autoResizeChatInput(e.target);
+            }, 0);
         }
         
-        if (e.key === 'Enter' && e.target.classList.contains('subtask-input')) {
-            e.preventDefault();
-            e.stopPropagation();
-            // Solo proceder si el input tiene contenido
-            if (e.target.value.trim()) {
-                const button = e.target.parentElement.querySelector('.subtask-btn');
-                this.addSubtaskFromForm(button);
-            }
-        } else if (e.key === 'Escape' && e.target.classList.contains('subtask-input')) {
-            e.preventDefault();
-            e.stopPropagation();
-            const button = e.target.parentElement.querySelector('.cancel-btn');
-            this.hideSubtaskForm(button);
-        } else if (e.key === 'Enter' && e.target.id === 'edit-task-tags') {
-            e.preventDefault();
-            this.addTagFromInput();
-        } else if (e.key === 'Escape') {
-            // Cerrar modal con tecla Escape
-            const modal = document.getElementById('modal');
-            if (modal && modal.style.display !== 'none') {
-                this.hideModal();
-            }
+        return;
+    }
+    
+    // Atajos de markdown para el editor de descripción
+    if (e.target.classList.contains('markdown-editor-content')) {
+        this.handleMarkdownShortcuts(e);
+        
+        // Actualizar estado de botones después de teclas de navegación
+        setTimeout(() => {
+            this.updateButtonStates(e.target);
+        }, 10);
+    }
+    
+    if (e.key === 'Enter' && e.target.classList.contains('subtask-input')) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Solo proceder si el input tiene contenido
+        if (e.target.value.trim()) {
+            const button = e.target.parentElement.querySelector('.subtask-btn');
+            this.addSubtaskFromForm(button);
+        }
+    } else if (e.key === 'Escape' && e.target.classList.contains('subtask-input')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const button = e.target.parentElement.querySelector('.cancel-btn');
+        this.hideSubtaskForm(button);
+    } else if (e.key === 'Enter' && e.target.id === 'edit-task-tags') {
+        e.preventDefault();
+        this.addTagFromInput();
+    } else if (e.key === 'Escape') {
+        // Cerrar modal con tecla Escape
+        const modal = document.getElementById('modal');
+        if (modal && modal.style.display !== 'none') {
+            this.hideModal();
         }
     }
-    // handleKeydown - Termina Aqui
+}
+// handleKeydown - Termina Aqui
+
+    // autoResizeChatInput - Inicia Aqui
+    autoResizeChatInput(textarea) {
+        // Resetear altura para calcular correctamente
+        textarea.style.height = 'auto';
+        
+        // Calcular nueva altura basada en el contenido
+        const maxHeight = 120; // Máximo 120px (aproximadamente 4-5 líneas)
+        const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+        
+        // Aplicar nueva altura
+        textarea.style.height = newHeight + 'px';
+        
+        // Si excede el máximo, mostrar scrollbar
+        if (textarea.scrollHeight > maxHeight) {
+            textarea.style.overflowY = 'auto';
+        } else {
+            textarea.style.overflowY = 'hidden';
+        }
+    }
+    // autoResizeChatInput - Termina Aqui
 
     // handleSelectionChange - Inicia Aqui
     handleSelectionChange() {
@@ -4112,6 +4154,42 @@ endInlineEdit(save) {
     }
     // initAssistant - Termina Aqui
     
+// setupChatInputListeners - Inicia Aqui
+setupChatInputListeners() {
+    const chatInput = document.getElementById('chatInput');
+    if (!chatInput) return;
+    
+    // Event listener para redimensionar en tiempo real
+    chatInput.addEventListener('input', (e) => {
+        this.autoResizeChatInput(e.target);
+    });
+    
+    // Event listener para paste (pegar texto)
+    chatInput.addEventListener('paste', (e) => {
+        // Permitir que se pegue el contenido primero
+        setTimeout(() => {
+            this.autoResizeChatInput(e.target);
+        }, 0);
+    });
+    
+    // Event listener para cuando se carga la página (si hay contenido previo)
+    chatInput.addEventListener('focus', (e) => {
+        if (e.target.value) {
+            this.autoResizeChatInput(e.target);
+        }
+    });
+}
+// setupChatInputListeners - Termina Aqui
+
+// Llamar esta función en initAssistant()
+// initAssistant - Inicia Aqui
+initAssistant() {
+    this.loadAssistantData();
+    this.setupAssistantEventListeners();
+    this.setupChatInputListeners(); // <- AGREGAR ESTA LÍNEA
+}
+// initAssistant - Termina Aqui
+
     // loadAssistantData - Inicia Aqui
     loadAssistantData() {
         try {
@@ -4184,7 +4262,11 @@ endInlineEdit(save) {
             timestamp: new Date()
         });
         
+        // Limpiar input y resetear altura
         input.value = '';
+        input.style.height = 'auto';
+        input.style.overflowY = 'hidden';
+        
         this.renderChatMessages();
         
         // Agregar indicador de carga
