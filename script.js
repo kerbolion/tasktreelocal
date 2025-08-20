@@ -4365,64 +4365,180 @@ endInlineEdit(save) {
     // callAIAPI - Termina Aqui
 
     // getDataManipulationFunctions - Inicia Aqui
-    getDataManipulationFunctions() {
-        return [
-            {
-                name: 'manipularDatos',
-                description: 'Función genérica para manipular datos del JSON. Puede agregar, editar, eliminar o consultar cualquier tipo de dato (tareas, notas, proyectos, carpetas, etc.)',
-                parameters: {
-                    type: 'object',
-                    properties: {
-                        operacion: {
-                            type: 'string',
-                            enum: ['obtener', 'agregar', 'editar', 'eliminar', 'marcar_completada', 'marcar_pendiente'],
-                            description: 'Tipo de operación a realizar'
-                        },
-                        tipo: {
-                            type: 'string',
-                            enum: ['tasks', 'notes', 'projects', 'folders'],
-                            description: 'Tipo de datos a manipular'
-                        },
-                        datos: {
-                            type: 'array',
-                            description: 'Array de objetos con los datos a manipular. Para editar/eliminar incluir el ID.',
-                            items: {
-                                type: 'object',
-                                properties: {
-                                    id: { type: 'integer', description: 'ID del elemento (para editar/eliminar)' },
-                                    title: { type: 'string', description: 'Título/nombre del elemento' },
-                                    description: { type: 'string', description: 'Descripción detallada de la tarea' },
-                                    parentId: { type: 'integer', description: 'ID de la tarea padre (para crear subtareas)' },
-                                    priority: { type: 'string', enum: ['alta', 'media', 'baja'], description: 'Prioridad de la tarea' },
-                                    dueDate: { type: 'string', description: 'Fecha límite en formato ISO (YYYY-MM-DD)' },
-                                    repeat: { type: 'string', enum: ['daily', 'weekly', 'monthly'], description: 'Tipo de repetición' },
-                                    repeatCount: { type: 'integer', description: 'Número de repeticiones' },
-                                    tags: { type: 'array', items: { type: 'string' }, description: 'Etiquetas/tags de la tarea' },
-                                    completed: { type: 'boolean', description: 'Estado completado' },
-                                    projectId: { type: 'integer', description: 'ID del proyecto' },
-                                    folderId: { type: 'integer', description: 'ID de la carpeta' },
-                                    color: { type: 'string', description: 'Color hex para proyectos/carpetas' },
-                                    content: { type: 'string', description: 'Contenido de la nota' }
+getDataManipulationFunctions() {
+    return [
+        {
+            name: 'manipularDatos',
+            description: 'Función para manipular datos del sistema de tareas. La IA debe RAZONAR y generar contenido específico para cada proyecto, no usar plantillas.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    operacion: {
+                        type: 'string',
+                        enum: ['obtener', 'agregar', 'editar', 'eliminar', 'marcar_completada', 'marcar_pendiente', 'crear_estructura_completa'],
+                        description: 'Operación a realizar. Usa "crear_estructura_completa" para generar un proyecto completo.'
+                    },
+                    tipo: {
+                        type: 'string',
+                        enum: ['tasks', 'projects', 'scenarios', 'estructura_completa'],
+                        description: 'Tipo de datos a manipular'
+                    },
+                    tema: {
+                        type: 'string',
+                        description: 'Descripción del proyecto para el cual la IA debe RAZONAR y crear contenido específico'
+                    },
+                    datos: {
+                        type: 'array',
+                        description: 'Array con elementos generados por la IA basados en el análisis del proyecto. La IA debe crear contenido inteligente y específico.',
+                        items: {
+                            type: 'object',
+                            properties: {
+                                tipo: { type: 'string', enum: ['escenario', 'proyecto', 'tarea'], description: 'Tipo de elemento' },
+                                title: { type: 'string', description: 'Nombre generado por la IA' },
+                                description: { type: 'string', description: 'Descripción detallada' },
+                                icon: { type: 'string', description: 'Emoji apropiado' },
+                                priority: { type: 'string', enum: ['alta', 'media', 'baja'] },
+                                dueDate: { type: 'string', description: 'Fecha ISO' },
+                                tags: { type: 'array', items: { type: 'string' } },
+                                subtasks: {
+                                    type: 'array',
+                                    description: 'Subtareas específicas generadas por la IA',
+                                    items: {
+                                        type: 'object',
+                                        properties: {
+                                            title: { type: 'string' },
+                                            description: { type: 'string' },
+                                            priority: { type: 'string', enum: ['alta', 'media', 'baja'] },
+                                            tags: { type: 'array', items: { type: 'string' } }
+                                        }
+                                    }
                                 }
                             }
-                        },
-                        escenario: {
-                            type: 'string',
-                            description: 'ID del escenario donde realizar la operación (opcional, usa el seleccionado por defecto)'
                         }
-                    },
-                    required: ['operacion', 'tipo']
-                }
+                    }
+                },
+                required: ['operacion', 'tipo']
             }
-        ];
-    }
-    // getDataManipulationFunctions - Termina Aqui
+        }
+    ];
+}
+// getDataManipulationFunctions - Termina Aqui
 
     // manipularDatos - Inicia Aqui
 async manipularDatos(args, context) {
-    const { operacion, tipo, datos = [], escenario } = args;
+    const { operacion, tipo, datos = [], escenario, tema, contexto_previo } = args;
     
     try {
+        // NUEVA FUNCIONALIDAD: Crear estructura completa demostrativa
+        if (tipo === 'estructura_completa' || operacion === 'crear_estructura_completa') {
+            const temaDemo = tema || 'desarrollo web';
+            const demoContent = this.createDemoContent(temaDemo);
+            
+            // 1. Crear el escenario
+            const scenarioId = this.scenarioIdCounter++;
+            const newScenario = {
+                id: scenarioId,
+                name: demoContent.scenario.name,
+                icon: demoContent.scenario.icon,
+                description: demoContent.scenario.description,
+                projects: {
+                    1: { 
+                        id: 1, 
+                        name: 'Sin proyecto', 
+                        icon: '📋', 
+                        description: 'Tareas sin categorizar', 
+                        tasks: [] 
+                    }
+                }
+            };
+            
+            // 2. Crear el proyecto dentro del escenario
+            const projectId = this.projectIdCounter++;
+            const newProject = {
+                id: projectId,
+                name: demoContent.project.name,
+                icon: demoContent.project.icon,
+                description: demoContent.project.description,
+                tasks: []
+            };
+            
+            newScenario.projects[projectId] = newProject;
+            
+            // 3. Crear las tareas con sus subtareas
+            const createdTasks = [];
+            for (const taskData of demoContent.tasks) {
+                const taskId = this.generateUniqueId();
+                const newTask = {
+                    id: taskId,
+                    text: taskData.title,
+                    completed: false,
+                    parentId: null,
+                    children: [],
+                    expanded: true,
+                    depth: 0,
+                    priority: taskData.priority || 'media',
+                    description: taskData.description || '',
+                    dueDate: this.generateDemoDate(),
+                    repeat: null,
+                    repeatCount: null,
+                    tags: taskData.tags || []
+                };
+                
+                // Crear subtareas
+                if (taskData.subtasks) {
+                    for (const subtaskData of taskData.subtasks) {
+                        const subtaskId = this.generateUniqueId();
+                        const newSubtask = {
+                            id: subtaskId,
+                            text: subtaskData.title,
+                            completed: false,
+                            parentId: taskId,
+                            children: [],
+                            expanded: true,
+                            depth: 1,
+                            priority: subtaskData.priority || 'media',
+                            description: subtaskData.description || '',
+                            dueDate: this.generateDemoDate(1, 7), // Entre 1 y 7 días
+                            repeat: null,
+                            repeatCount: null,
+                            tags: subtaskData.tags || []
+                        };
+                        newTask.children.push(newSubtask);
+                    }
+                }
+                
+                newProject.tasks.push(newTask);
+                createdTasks.push(newTask);
+            }
+            
+            // 4. Guardar en la base de datos
+            this.data[scenarioId] = newScenario;
+            this.saveAndRender();
+            
+            // 5. Actualizar selectores para mostrar el nuevo contenido
+            this.updateSelectors();
+            
+            // 6. Cambiar al nuevo escenario y proyecto
+            this.currentScenario = scenarioId;
+            this.currentProject = projectId;
+            this.updateSelectors();
+            this.render();
+            
+            return `✅ **Estructura completa creada para "${temaDemo}":**
+            
+📁 **Escenario:** ${demoContent.scenario.name} (ID: ${scenarioId})
+📋 **Proyecto:** ${demoContent.project.name} (ID: ${projectId})
+📝 **Tareas creadas:** ${createdTasks.length}
+📋 **Subtareas totales:** ${createdTasks.reduce((total, task) => total + task.children.length, 0)}
+
+**Detalles:**
+${createdTasks.map(task => 
+    `• ${task.text} (ID: ${task.id}) - ${task.children.length} subtareas`
+).join('\n')}
+
+*El escenario y proyecto han sido seleccionados automáticamente en la interfaz.*`;
+        }
+        
         // Para Tasks, usar directamente los métodos del TaskManager
         if (tipo === 'tasks') {
             switch(operacion) {
@@ -4430,8 +4546,10 @@ async manipularDatos(args, context) {
                     let results = [];
                     for (const tarea of datos) {
                         const parentId = tarea.parentId || null;
-                        const targetScenario = escenario || this.currentScenario;
-                        const targetProject = tarea.projectId || this.currentProject;
+                        
+                        // Usar contexto previo si no se especifica proyecto/escenario
+                        const targetScenario = tarea.scenarioId || contexto_previo?.ultimo_escenario_id || this.currentScenario;
+                        const targetProject = tarea.projectId || contexto_previo?.ultimo_proyecto_id || this.currentProject;
                         
                         // Crear tarea manualmente para evitar múltiples renderizados
                         const taskId = this.generateUniqueId();
@@ -4453,6 +4571,29 @@ async manipularDatos(args, context) {
                         
                         // Configurar completed si se especifica
                         if (tarea.completed !== undefined) newTask.completed = tarea.completed;
+                        
+                        // Crear subtareas si se especifican
+                        if (tarea.subtasks && Array.isArray(tarea.subtasks)) {
+                            for (const subtaskData of tarea.subtasks) {
+                                const subtaskId = this.generateUniqueId();
+                                const newSubtask = {
+                                    id: subtaskId,
+                                    text: subtaskData.title,
+                                    completed: false,
+                                    parentId: taskId,
+                                    children: [],
+                                    expanded: true,
+                                    depth: newTask.depth + 1,
+                                    priority: subtaskData.priority || 'media',
+                                    description: subtaskData.description || '',
+                                    dueDate: subtaskData.dueDate || null,
+                                    repeat: null,
+                                    repeatCount: null,
+                                    tags: subtaskData.tags || []
+                                };
+                                newTask.children.push(newSubtask);
+                            }
+                        }
                         
                         // Agregar la tarea al escenario y proyecto especificados
                         if (parentId) {
@@ -4477,13 +4618,14 @@ async manipularDatos(args, context) {
                         const taskType = parentId ? 'Subtarea' : 'Tarea';
                         const parentInfo = parentId ? ` (subtarea de ID: ${parentId})` : '';
                         const contextInfo = ` (Escenario: ${this.data[targetScenario]?.name || targetScenario}, Proyecto: ${this.data[targetScenario]?.projects[targetProject]?.name || targetProject})`;
+                        const subtasksInfo = newTask.children.length > 0 ? ` con ${newTask.children.length} subtareas` : '';
                         const propsInfo = [];
                         if (tarea.priority) propsInfo.push(`prioridad: ${tarea.priority}`);
                         if (tarea.dueDate) propsInfo.push(`fecha: ${tarea.dueDate}`);
                         if (tarea.tags?.length) propsInfo.push(`etiquetas: ${tarea.tags.join(', ')}`);
                         const additionalInfo = propsInfo.length ? ` (${propsInfo.join(', ')})` : '';
                         
-                        results.push(`✅ ${taskType} agregada: "${tarea.title}" (ID: ${newTask.id})${parentInfo}${contextInfo}${additionalInfo}`);
+                        results.push(`✅ ${taskType} agregada: "${tarea.title}" (ID: ${newTask.id})${parentInfo}${contextInfo}${subtasksInfo}${additionalInfo}`);
                     }
                     // Guardar y renderizar una sola vez al final
                     this.saveAndRender();
@@ -4565,6 +4707,11 @@ async manipularDatos(args, context) {
                                 allTasksText += `  📋 ${project.name}: ${tasks.length} tareas\n`;
                                 tasks.forEach(task => {
                                     allTasksText += `    • ID: ${task.id} - ${task.text} ${task.completed ? '✅' : '⏳'}\n`;
+                                    if (task.children && task.children.length > 0) {
+                                        task.children.forEach(subtask => {
+                                            allTasksText += `      ↳ ID: ${subtask.id} - ${subtask.text} ${subtask.completed ? '✅' : '⏳'}\n`;
+                                        });
+                                    }
                                 });
                             });
                         }
@@ -4577,13 +4724,13 @@ async manipularDatos(args, context) {
             }
         }
         
-        // Para proyectos y escenarios
+        // Para proyectos
         if (tipo === 'projects') {
             switch(operacion) {
                 case 'agregar':
                     let projectResults = [];
                     for (const proyecto of datos) {
-                        const targetScenario = escenario || this.currentScenario;
+                        const targetScenario = proyecto.scenarioId || contexto_previo?.ultimo_escenario_id || this.currentScenario;
                         const newProject = {
                             id: this.projectIdCounter++,
                             name: proyecto.title,
@@ -4621,6 +4768,47 @@ async manipularDatos(args, context) {
             }
         }
         
+        // Para escenarios
+        if (tipo === 'scenarios') {
+            switch(operacion) {
+                case 'agregar':
+                    let scenarioResults = [];
+                    for (const escenario of datos) {
+                        const newScenario = {
+                            id: this.scenarioIdCounter++,
+                            name: escenario.title,
+                            description: escenario.description || '',
+                            icon: escenario.icon || '📁',
+                            projects: {
+                                1: { 
+                                    id: 1, 
+                                    name: 'Sin proyecto', 
+                                    icon: '📋', 
+                                    description: 'Tareas sin categorizar', 
+                                    tasks: [] 
+                                }
+                            }
+                        };
+                        this.data[newScenario.id] = newScenario;
+                        scenarioResults.push(`✅ Escenario agregado: "${escenario.title}" (ID: ${newScenario.id})`);
+                    }
+                    this.saveData();
+                    this.updateSelectors();
+                    this.render();
+                    return scenarioResults.join('\n');
+                
+                case 'obtener':
+                    let allScenariosText = '';
+                    Object.values(this.data).forEach(scenario => {
+                        allScenariosText += `📁 ID: ${scenario.id} - ${scenario.name}\n`;
+                    });
+                    return `📂 TODOS LOS ESCENARIOS:\n${allScenariosText}`;
+                
+                default:
+                    return `❌ Operación "${operacion}" no soportada para escenarios`;
+            }
+        }
+        
         return `❌ Tipo de datos "${tipo}" no soportado actualmente`;
         
     } catch (error) {
@@ -4628,6 +4816,16 @@ async manipularDatos(args, context) {
     }
 }
 // manipularDatos - Termina Aqui
+
+// generateDemoDate - Inicia Aqui
+generateDemoDate(minDays = 1, maxDays = 14) {
+    const now = new Date();
+    const randomDays = Math.floor(Math.random() * (maxDays - minDays + 1)) + minDays;
+    const futureDate = new Date(now.getTime() + (randomDays * 24 * 60 * 60 * 1000));
+    
+    return futureDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+}
+// generateDemoDate - Termina Aqui
 
 // findTaskByIdInAllScenarios - Inicia Aqui
 findTaskByIdInAllScenarios(taskId) {
@@ -4684,9 +4882,54 @@ buildSystemPrompt(context) {
     systemPrompt += `- Todos los escenarios y sus proyectos\n`;
     systemPrompt += `- Todas las tareas de todos los contextos\n`;
     systemPrompt += `- Puedes consultar, crear, editar y eliminar elementos en cualquier contexto\n\n`;
+    
+    // CAPACIDADES DE RAZONAMIENTO INTELIGENTE
+    systemPrompt += `RAZONAMIENTO INTELIGENTE PARA PROYECTOS:\n`;
+    systemPrompt += `**ANALIZA EL PROYECTO SOLICITADO:**\n`;
+    systemPrompt += `- Entiende QUÉ tipo de proyecto es (CRM, e-commerce, app móvil, etc.)\n`;
+    systemPrompt += `- Identifica las FASES lógicas del desarrollo\n`;
+    systemPrompt += `- Piensa en los COMPONENTES técnicos necesarios\n`;
+    systemPrompt += `- Considera las INTEGRACIONES que necesitará\n`;
+    systemPrompt += `- Define las TAREAS específicas que hacen sentido para ESE proyecto\n\n`;
+    
+    systemPrompt += `**CREA ESTRUCTURAS INTELIGENTES:**\n`;
+    systemPrompt += `- Escenario: Describe el DOMINIO del proyecto (ej: "CRM y Automatización", "E-commerce", "Fintech")\n`;
+    systemPrompt += `- Proyecto: El PRODUCTO específico que se está construyendo\n`;
+    systemPrompt += `- Tareas: FASES reales del desarrollo (Backend, Frontend, Integraciones, Testing, Deploy)\n`;
+    systemPrompt += `- Subtareas: ACCIONES específicas dentro de cada fase\n\n`;
+    
+    systemPrompt += `**EJEMPLOS DE RAZONAMIENTO:**\n`;
+    systemPrompt += `Si piden "CRM para WhatsApp":\n`;
+    systemPrompt += `- Escenario: "CRM y Automatización de Ventas"\n`;
+    systemPrompt += `- Proyecto: "CRM WhatsApp Business"\n`;
+    systemPrompt += `- Tareas: "Integración WhatsApp API", "Dashboard de Conversaciones", "Automatización de Respuestas", "Analytics y Reportes"\n`;
+    systemPrompt += `- Subtareas para API: "Configurar Webhook", "Autenticación Business API", "Manejo de mensajes entrantes"\n\n`;
+    
+    systemPrompt += `Si piden "E-commerce con pagos":\n`;
+    systemPrompt += `- Escenario: "Plataforma de E-commerce"\n`;
+    systemPrompt += `- Proyecto: "Tienda Online con Pagos"\n`;
+    systemPrompt += `- Tareas: "Catálogo de Productos", "Carrito de Compras", "Sistema de Pagos", "Gestión de Pedidos"\n`;
+    systemPrompt += `- Subtareas para Pagos: "Integrar Stripe", "Configurar PayPal", "Validación de tarjetas"\n\n`;
+    
+    systemPrompt += `**MANTÉN CONTEXTO:**\n`;
+    systemPrompt += `- Recuerda el proyecto del que estamos hablando\n`;
+    systemPrompt += `- Si piden "agregar más tareas" refírete al mismo proyecto\n`;
+    systemPrompt += `- Si piden "crear subtareas" agrégalas a las tareas existentes\n`;
+    systemPrompt += `- Siempre mantén coherencia temática\n\n`;
+    
+    systemPrompt += `**FORMATO DE FECHAS**: SIEMPRE usa formato ISO (YYYY-MM-DD). Para "mañana" usa ${tomorrow}, para "hoy" usa ${today}\n\n`;
+    
     systemPrompt += `DATOS DISPONIBLES:\n`;
     systemPrompt += `${JSON.stringify(this.data, null, 2)}\n\n`;
-    systemPrompt += `Responde basándote en toda esta información disponible.`;
+    
+    systemPrompt += `**INSTRUCCIONES ESPECÍFICAS:**\n`;
+    systemPrompt += `1. NO uses plantillas predefinidas - RAZONA cada proyecto\n`;
+    systemPrompt += `2. ANALIZA lo que el usuario realmente necesita\n`;
+    systemPrompt += `3. CREA contenido que tenga sentido para ESE proyecto específico\n`;
+    systemPrompt += `4. PIENSA como un arquitecto de software experimentado\n`;
+    systemPrompt += `5. GENERA tareas que realmente se harían en ese tipo de proyecto\n\n`;
+    
+    systemPrompt += `Responde siempre con razonamiento inteligente y contenido útil para el proyecto específico solicitado.`;
     
     return systemPrompt;
 }
