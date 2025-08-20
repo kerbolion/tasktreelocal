@@ -19,6 +19,8 @@ class TaskManager {
         this.lastSelectedTaskId = null;
         this.isMultiSelectMode = false;
         this.currentlyEditingTaskId = null;
+        this.currentProjectOnlyMode = false;
+
         
         this.data = this.initializeDefaultData();
         
@@ -29,7 +31,7 @@ class TaskManager {
         // Configuración de IA
         this.aiConfig = {
             apiKey: '',
-            model: 'gpt-5-mini',
+            model: 'gpt-4.1-mini',
             maxTokens: 1000,
             temperature: 1,
             historyLimit: 10
@@ -47,7 +49,10 @@ class TaskManager {
         this.modelPricing = {
             'gpt-5-nano': { input: 0.00005, output: 0.0004 },
             'gpt-5-mini': { input: 0.00025, output: 0.002 },
-            'gpt-5': { input: 0.00125, output: 0.01 }
+            'gpt-5': { input: 0.00125, output: 0.01 },
+            'gpt-4.1-nano': { input: 0.0001, output: 0.0004, cacheReads: 0.00003 },
+            'gpt-4.1-mini': { input: 0.0004, output: 0.0016, cacheReads: 0.0001 },
+            'gpt-4.1': { input: 0.002, output: 0.008,cacheReads: 0.0005 }
         };
         
         // Configuración de prompts por contexto
@@ -117,6 +122,18 @@ class TaskManager {
         // Manejar eventos del asistente
         if (e.target.id === 'toggleAssistant') {
             this.toggleAssistant();
+            return;
+        }
+
+        // handleClick - Agregar manejo del checkbox
+        // En la función handleClick, agregar después de los eventos del asistente:
+        if (e.target.id === 'currentProjectOnly') {
+            this.currentProjectOnlyMode = e.target.checked;
+            this.saveAssistantData();
+            
+            // Mostrar notificación del cambio
+            const mode = this.currentProjectOnlyMode ? 'Solo Proyecto Actual' : 'Todos los Datos';
+            this.showNotification(`Modo cambiado a: ${mode}`, 'info');
             return;
         }
         
@@ -229,6 +246,9 @@ class TaskManager {
         }
     }
     // handleClick - Termina Aqui
+
+
+
 
     // handleChange - Inicia Aqui
     handleChange(e) {
@@ -4191,33 +4211,46 @@ initAssistant() {
 // initAssistant - Termina Aqui
 
     // loadAssistantData - Inicia Aqui
-    loadAssistantData() {
-        try {
-            const savedConfig = localStorage.getItem('taskTreeAIConfig');
-            if (savedConfig) {
-                this.aiConfig = { ...this.aiConfig, ...JSON.parse(savedConfig) };
-            }
-            
-            const savedStats = localStorage.getItem('taskTreeAIStats');
-            if (savedStats) {
-                this.aiStats = { ...this.aiStats, ...JSON.parse(savedStats) };
-            }
-            
-            const savedMessages = localStorage.getItem('taskTreeAIMessages');
-            if (savedMessages) {
-                this.mensajes = JSON.parse(savedMessages);
-                this.renderChatMessages();
-            }
-            
-            const savedPrompts = localStorage.getItem('taskTreeAIPrompts');
-            if (savedPrompts) {
-                this.promptContexts = { ...this.promptContexts, ...JSON.parse(savedPrompts) };
-            }
-        } catch (error) {
-            // Error cargando datos del asistente
+loadAssistantData() {
+    try {
+        const savedConfig = localStorage.getItem('taskTreeAIConfig');
+        if (savedConfig) {
+            this.aiConfig = { ...this.aiConfig, ...JSON.parse(savedConfig) };
         }
+        
+        const savedStats = localStorage.getItem('taskTreeAIStats');
+        if (savedStats) {
+            this.aiStats = { ...this.aiStats, ...JSON.parse(savedStats) };
+        }
+        
+        const savedMessages = localStorage.getItem('taskTreeAIMessages');
+        if (savedMessages) {
+            this.mensajes = JSON.parse(savedMessages);
+            this.renderChatMessages();
+        }
+        
+        const savedPrompts = localStorage.getItem('taskTreeAIPrompts');
+        if (savedPrompts) {
+            this.promptContexts = { ...this.promptContexts, ...JSON.parse(savedPrompts) };
+        }
+        
+        // Cargar estado del checkbox "Solo Proyecto Actual"
+        const savedProjectMode = localStorage.getItem('taskTreeCurrentProjectOnly');
+        if (savedProjectMode !== null) {
+            this.currentProjectOnlyMode = JSON.parse(savedProjectMode);
+            // Actualizar el checkbox en la UI
+            setTimeout(() => {
+                const checkbox = document.getElementById('currentProjectOnly');
+                if (checkbox) {
+                    checkbox.checked = this.currentProjectOnlyMode;
+                }
+            }, 100);
+        }
+    } catch (error) {
+        // Error cargando datos del asistente
     }
-    // loadAssistantData - Termina Aqui
+}
+// loadAssistantData - Termina Aqui
     
     // setupAssistantEventListeners - Inicia Aqui
     setupAssistantEventListeners() {
@@ -4286,164 +4319,173 @@ initAssistant() {
     
     // callAIAPI - Inicia Aqui
     async callAIAPI(userMessage) {
-        try {
-            const context = this.getSelectedContext();
-            const systemPrompt = this.buildSystemPrompt(context);
-            
-            // Preparar historial de mensajes para la API (excluyendo el mensaje de carga)
-            const apiMessages = this.mensajes
-                .filter(m => !m.isLoading)
-                .slice(-this.aiConfig.historyLimit)
-                .map(m => ({ role: m.role, content: m.content }));
+    try {
+        const context = this.getSelectedContext();
+        const systemPrompt = this.buildSystemPrompt(context);
+        
+        // Preparar historial de mensajes para la API (excluyendo el mensaje de carga)
+        const apiMessages = this.mensajes
+            .filter(m => !m.isLoading)
+            .slice(-this.aiConfig.historyLimit)
+            .map(m => ({ role: m.role, content: m.content }));
 
-            const messages = [
-                { role: 'system', content: systemPrompt },
-                ...apiMessages,
-                { role: 'user', content: userMessage }
-            ];
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...apiMessages,
+            { role: 'user', content: userMessage }
+        ];
 
-            const requestBody = {
-                model: this.aiConfig.model,
-                messages: messages
-            };
-            
-            // Usar max_completion_tokens para modelos GPT-5, max_tokens para otros
-            if (this.aiConfig.model.startsWith('gpt-5')) {
-                requestBody.max_completion_tokens = this.aiConfig.maxTokens;
-                requestBody.temperature = 1; // GPT-5 solo soporta temperature = 1
-            } else {
-                requestBody.max_tokens = this.aiConfig.maxTokens;
-                requestBody.temperature = this.aiConfig.temperature;
-            }
+        const requestBody = {
+            model: this.aiConfig.model,
+            messages: messages
+        };
+        
+        // Configurar tokens y temperatura según el modelo
+        if (this.aiConfig.model.startsWith('gpt-4.1')) {
+            // GPT-4.1 series: usar max_completion_tokens y temperature flexible
+            requestBody.max_completion_tokens = this.aiConfig.maxTokens;
+            requestBody.temperature = this.aiConfig.temperature;
+        } else if (this.aiConfig.model.startsWith('gpt-5')) {
+            // GPT-5 series: usar configuración específica
+            requestBody.max_completion_tokens = this.aiConfig.maxTokens;
+            requestBody.temperature = 1; // GPT-5 solo soporta temperature = 1
+        } else {
+            // Otros modelos: usar configuración estándar
+            requestBody.max_tokens = this.aiConfig.maxTokens;
+            requestBody.temperature = this.aiConfig.temperature;
+        }
 
-            // Agregar función genérica para manipular datos
-            requestBody.functions = this.getDataManipulationFunctions();
+        // Agregar función genérica para manipular datos
+        requestBody.functions = this.getDataManipulationFunctions();
 
-            const startTime = Date.now();
-            
-            // Usar OpenAI API para todos los modelos
-            const apiUrl = 'https://api.openai.com/v1/chat/completions';
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.aiConfig.apiKey}`
-            };
+        const startTime = Date.now();
+        
+        // Usar OpenAI API para todos los modelos
+        const apiUrl = 'https://api.openai.com/v1/chat/completions';
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.aiConfig.apiKey}`
+        };
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(requestBody)
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(requestBody)
+        });
+
+        const data = await response.json();
+        const endTime = Date.now();
+
+        // Remover mensaje de carga
+        this.mensajes = this.mensajes.filter(m => !m.isLoading);
+
+        if (!response.ok) {
+            const errorMessage = data.error ? data.error.message : `Error ${response.status}`;
+            this.mensajes.push({
+                role: 'assistant',
+                content: `❌ **Error de API:** ${errorMessage}`,
+                timestamp: new Date()
             });
+            this.renderChatMessages();
+            this.saveAssistantData();
+            return;
+        }
 
-            const data = await response.json();
-            const endTime = Date.now();
+        // Actualizar estadísticas si están disponibles
+        if (data.usage) {
+            const { prompt_tokens, completion_tokens, total_tokens } = data.usage;
+            this.updateAIStats(prompt_tokens || 0, completion_tokens || 0);
+        }
 
-            // Remover mensaje de carga
-            this.mensajes = this.mensajes.filter(m => !m.isLoading);
-
-            if (!response.ok) {
-                const errorMessage = data.error ? data.error.message : `Error ${response.status}`;
-                this.mensajes.push({
-                    role: 'assistant',
-                    content: `❌ **Error de API:** ${errorMessage}`,
-                    timestamp: new Date()
-                });
-                this.renderChatMessages();
-                this.saveAssistantData();
-                return;
-            }
-
-            // Actualizar estadísticas si están disponibles
-            if (data.usage) {
-                const { prompt_tokens, completion_tokens, total_tokens } = data.usage;
-                this.updateAIStats(prompt_tokens || 0, completion_tokens || 0);
-            }
-
-            if (data.choices && data.choices.length > 0) {
-                const msg = data.choices[0].message;
+        if (data.choices && data.choices.length > 0) {
+            const msg = data.choices[0].message;
+            
+            // Verificar si hay function_call
+            if (msg.hasOwnProperty('function_call')) {
+                const nombreFuncion = msg.function_call.name;
+                const args = JSON.parse(msg.function_call.arguments);
+                let resultado;
                 
-                // Verificar si hay function_call
-                if (msg.hasOwnProperty('function_call')) {
-                    const nombreFuncion = msg.function_call.name;
-                    const args = JSON.parse(msg.function_call.arguments);
-                    let resultado;
-                    
-                    switch(nombreFuncion) {
-                        case 'manipularDatos':
-                            resultado = await this.manipularDatos(args, context);
-                            break;
-                        default:
-                            resultado = '❌ Función no reconocida.';
-                    }
+                switch(nombreFuncion) {
+                    case 'manipularDatos':
+                        resultado = await this.manipularDatos(args, context);
+                        break;
+                    default:
+                        resultado = '❌ Función no reconocida.';
+                }
 
-                    // Hacer una segunda llamada para obtener la respuesta final
-                    const finalRequestBody = {
-                        model: this.aiConfig.model,
-                        messages: [
-                            { role: 'system', content: systemPrompt + " Responde de forma muy concisa." },
-                            ...apiMessages.slice(-3),
-                            { role: 'user', content: userMessage },
-                            { role: 'function', name: nombreFuncion, content: resultado }
-                        ]
-                    };
-                    
-                    // Usar max_completion_tokens para modelos GPT-5, max_tokens para otros
-                    if (this.aiConfig.model.startsWith('gpt-5')) {
-                        finalRequestBody.max_completion_tokens = Math.min(this.aiConfig.maxTokens, 200);
-                        finalRequestBody.temperature = 1;
-                    } else {
-                        finalRequestBody.max_tokens = Math.min(this.aiConfig.maxTokens, 200);
-                        finalRequestBody.temperature = 0.3;
-                    }
-                    
-                    const finalResponse = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: headers,
-                        body: JSON.stringify(finalRequestBody)
+                // Hacer una segunda llamada para obtener la respuesta final
+                const finalRequestBody = {
+                    model: this.aiConfig.model,
+                    messages: [
+                        { role: 'system', content: systemPrompt + " Responde de forma muy concisa." },
+                        ...apiMessages.slice(-3),
+                        { role: 'user', content: userMessage },
+                        { role: 'function', name: nombreFuncion, content: resultado }
+                    ]
+                };
+                
+                // Configurar tokens según el modelo
+                if (this.aiConfig.model.startsWith('gpt-4.1')) {
+                    finalRequestBody.max_completion_tokens = Math.min(this.aiConfig.maxTokens, 200);
+                    finalRequestBody.temperature = this.aiConfig.temperature;
+                } else if (this.aiConfig.model.startsWith('gpt-5')) {
+                    finalRequestBody.max_completion_tokens = Math.min(this.aiConfig.maxTokens, 200);
+                    finalRequestBody.temperature = 1;
+                } else {
+                    finalRequestBody.max_tokens = Math.min(this.aiConfig.maxTokens, 200);
+                    finalRequestBody.temperature = 0.3;
+                }
+                
+                const finalResponse = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(finalRequestBody)
+                });
+
+                const finalData = await finalResponse.json();
+                if (finalData.choices && finalData.choices.length > 0) {
+                    const assistantMessage = finalData.choices[0].message.content;
+                    this.mensajes.push({
+                        role: 'assistant',
+                        content: assistantMessage,
+                        timestamp: new Date()
                     });
-
-                    const finalData = await finalResponse.json();
-                    if (finalData.choices && finalData.choices.length > 0) {
-                        const assistantMessage = finalData.choices[0].message.content;
-                        this.mensajes.push({
-                            role: 'assistant',
-                            content: assistantMessage,
-                            timestamp: new Date()
-                        });
-                    } else {
-                        this.mensajes.push({
-                            role: 'assistant',
-                            content: resultado,
-                            timestamp: new Date()
-                        });
-                    }
                 } else {
                     this.mensajes.push({
                         role: 'assistant',
-                        content: msg.content,
+                        content: resultado,
                         timestamp: new Date()
                     });
                 }
-
-                this.renderChatMessages();
-                this.saveAssistantData();
             } else {
-                throw new Error('No se recibió respuesta válida de la API');
+                this.mensajes.push({
+                    role: 'assistant',
+                    content: msg.content,
+                    timestamp: new Date()
+                });
             }
 
-        } catch (error) {
-            // Remover mensaje de carga
-            this.mensajes = this.mensajes.filter(m => !m.isLoading);
-            
-            this.mensajes.push({
-                role: 'assistant',
-                content: `❌ **Error de conexión:** ${error.message}. Verifica tu API Key y conexión a internet.`,
-                timestamp: new Date()
-            });
-            
             this.renderChatMessages();
             this.saveAssistantData();
+        } else {
+            throw new Error('No se recibió respuesta válida de la API');
         }
+
+    } catch (error) {
+        // Remover mensaje de carga
+        this.mensajes = this.mensajes.filter(m => !m.isLoading);
+        
+        this.mensajes.push({
+            role: 'assistant',
+            content: `❌ **Error de conexión:** ${error.message}. Verifica tu API Key y conexión a internet.`,
+            timestamp: new Date()
+        });
+        
+        this.renderChatMessages();
+        this.saveAssistantData();
     }
+}
     // callAIAPI - Termina Aqui
 
     // getDataManipulationFunctions - Inicia Aqui
@@ -4511,109 +4553,185 @@ async manipularDatos(args, context) {
     const { operacion, tipo, datos = [], escenario, tema, contexto_previo } = args;
     
     try {
+        // DETECTAR EL MODO ACTUAL
+        const isCurrentProjectOnly = this.currentProjectOnlyMode;
+        let targetScenario, targetProject;
+        
+        if (isCurrentProjectOnly) {
+            // En modo "Solo Proyecto Actual", usar siempre el proyecto actual
+            targetScenario = this.currentScenario;
+            targetProject = this.currentProject;
+        } else {
+            // En modo completo, usar el contexto proporcionado o el actual
+            targetScenario = contexto_previo?.ultimo_escenario_id || this.currentScenario;
+            targetProject = contexto_previo?.ultimo_proyecto_id || this.currentProject;
+        }
+        
         // NUEVA FUNCIONALIDAD: Crear estructura completa demostrativa - CON IA
         if (tipo === 'estructura_completa' || operacion === 'crear_estructura_completa') {
-            // La IA debe haber generado la estructura en los datos
-            if (!datos || datos.length === 0) {
-                return `❌ No se proporcionaron datos para crear la estructura. La IA debe generar el contenido específico para "${tema}".`;
-            }
-            
-            let results = [];
-            let createdScenario = null;
-            let createdProject = null;
-            
-            // Procesar cada elemento según su tipo
-            for (const item of datos) {
-                if (item.tipo === 'escenario') {
-                    const scenarioId = this.scenarioIdCounter++;
-                    const newScenario = {
-                        id: scenarioId,
-                        name: item.title,
-                        icon: item.icon || '📁',
-                        description: item.description || '',
-                        projects: {
-                            1: { 
-                                id: 1, 
-                                name: 'Sin proyecto', 
-                                icon: '📋', 
-                                description: 'Tareas sin categorizar', 
-                                tasks: [] 
+            if (isCurrentProjectOnly) {
+                // En modo proyecto actual, crear las tareas directamente en el proyecto actual
+                if (!datos || datos.length === 0) {
+                    return `❌ No se proporcionaron datos para crear las tareas en "${this.data[targetScenario]?.projects[targetProject]?.name}".`;
+                }
+                
+                let results = [];
+                
+                // Solo procesar tareas (ignorar escenarios y proyectos en este modo)
+                for (const item of datos) {
+                    if (item.tipo === 'tarea') {
+                        const taskId = this.generateUniqueId();
+                        const newTask = {
+                            id: taskId,
+                            text: item.title,
+                            completed: false,
+                            parentId: null,
+                            children: [],
+                            expanded: true,
+                            depth: 0,
+                            priority: item.priority || 'media',
+                            description: item.description || '',
+                            dueDate: item.dueDate || this.generateDemoDate(),
+                            repeat: null,
+                            repeatCount: null,
+                            tags: item.tags || []
+                        };
+                        
+                        // Agregar subtareas si existen
+                        if (item.subtasks) {
+                            for (const subtaskData of item.subtasks) {
+                                const subtaskId = this.generateUniqueId();
+                                const newSubtask = {
+                                    id: subtaskId,
+                                    text: subtaskData.title,
+                                    completed: false,
+                                    parentId: taskId,
+                                    children: [],
+                                    expanded: true,
+                                    depth: 1,
+                                    priority: subtaskData.priority || 'media',
+                                    description: subtaskData.description || '',
+                                    dueDate: subtaskData.dueDate || this.generateDemoDate(1, 7),
+                                    repeat: null,
+                                    repeatCount: null,
+                                    tags: subtaskData.tags || []
+                                };
+                                newTask.children.push(newSubtask);
                             }
                         }
-                    };
-                    
-                    this.data[scenarioId] = newScenario;
-                    createdScenario = newScenario;
-                    results.push(`📁 Escenario creado: "${item.title}" (ID: ${scenarioId})`);
+                        
+                        // Agregar al proyecto actual
+                        this.data[targetScenario].projects[targetProject].tasks.push(newTask);
+                        results.push(`📝 Tarea creada en proyecto actual: "${item.title}" (ID: ${taskId}) con ${newTask.children.length} subtareas`);
+                    }
                 }
                 
-                if (item.tipo === 'proyecto') {
-                    const projectId = this.projectIdCounter++;
-                    const newProject = {
-                        id: projectId,
-                        name: item.title,
-                        icon: item.icon || '📋',
-                        description: item.description || '',
-                        tasks: []
-                    };
-                    
-                    const targetScenario = createdScenario || this.data[this.currentScenario];
-                    targetScenario.projects[projectId] = newProject;
-                    createdProject = newProject;
-                    results.push(`📋 Proyecto creado: "${item.title}" (ID: ${projectId})`);
+                this.saveAndRender();
+                return `✅ **Tareas creadas en "${this.data[targetScenario]?.projects[targetProject]?.name}":**\n\n${results.join('\n')}\n\n*Las tareas han sido agregadas al proyecto actual.*`;
+                
+            } else {
+                // Modo completo: comportamiento original (crear escenarios, proyectos y tareas)
+                if (!datos || datos.length === 0) {
+                    return `❌ No se proporcionaron datos para crear la estructura. La IA debe generar el contenido específico para "${tema}".`;
                 }
                 
-                if (item.tipo === 'tarea') {
-                    const taskId = this.generateUniqueId();
-                    const newTask = {
-                        id: taskId,
-                        text: item.title,
-                        completed: false,
-                        parentId: null,
-                        children: [],
-                        expanded: true,
-                        depth: 0,
-                        priority: item.priority || 'media',
-                        description: item.description || '',
-                        dueDate: item.dueDate || this.generateDemoDate(),
-                        repeat: null,
-                        repeatCount: null,
-                        tags: item.tags || []
-                    };
-                    
-                    // Agregar subtareas si existen
-                    if (item.subtasks) {
-                        for (const subtaskData of item.subtasks) {
-                            const subtaskId = this.generateUniqueId();
-                            const newSubtask = {
-                                id: subtaskId,
-                                text: subtaskData.title,
-                                completed: false,
-                                parentId: taskId,
-                                children: [],
-                                expanded: true,
-                                depth: 1,
-                                priority: subtaskData.priority || 'media',
-                                description: subtaskData.description || '',
-                                dueDate: subtaskData.dueDate || this.generateDemoDate(1, 7),
-                                repeat: null,
-                                repeatCount: null,
-                                tags: subtaskData.tags || []
-                            };
-                            newTask.children.push(newSubtask);
-                        }
+                let results = [];
+                let createdScenario = null;
+                let createdProject = null;
+                
+                // Procesar cada elemento según su tipo
+                for (const item of datos) {
+                    if (item.tipo === 'escenario') {
+                        const scenarioId = this.scenarioIdCounter++;
+                        const newScenario = {
+                            id: scenarioId,
+                            name: item.title,
+                            icon: item.icon || '📁',
+                            description: item.description || '',
+                            projects: {
+                                1: { 
+                                    id: 1, 
+                                    name: 'Sin proyecto', 
+                                    icon: '📋', 
+                                    description: 'Tareas sin categorizar', 
+                                    tasks: [] 
+                                }
+                            }
+                        };
+                        
+                        this.data[scenarioId] = newScenario;
+                        createdScenario = newScenario;
+                        results.push(`📁 Escenario creado: "${item.title}" (ID: ${scenarioId})`);
                     }
                     
-                    const targetProject = createdProject || this.data[this.currentScenario].projects[this.currentProject];
-                    targetProject.tasks.push(newTask);
-                    results.push(`📝 Tarea creada: "${item.title}" (ID: ${taskId}) con ${newTask.children.length} subtareas`);
+                    if (item.tipo === 'proyecto') {
+                        const projectId = this.projectIdCounter++;
+                        const newProject = {
+                            id: projectId,
+                            name: item.title,
+                            icon: item.icon || '📋',
+                            description: item.description || '',
+                            tasks: []
+                        };
+                        
+                        const targetScenarioForProject = createdScenario || this.data[this.currentScenario];
+                        targetScenarioForProject.projects[projectId] = newProject;
+                        createdProject = newProject;
+                        results.push(`📋 Proyecto creado: "${item.title}" (ID: ${projectId})`);
+                    }
+                    
+                    if (item.tipo === 'tarea') {
+                        const taskId = this.generateUniqueId();
+                        const newTask = {
+                            id: taskId,
+                            text: item.title,
+                            completed: false,
+                            parentId: null,
+                            children: [],
+                            expanded: true,
+                            depth: 0,
+                            priority: item.priority || 'media',
+                            description: item.description || '',
+                            dueDate: item.dueDate || this.generateDemoDate(),
+                            repeat: null,
+                            repeatCount: null,
+                            tags: item.tags || []
+                        };
+                        
+                        // Agregar subtareas si existen
+                        if (item.subtasks) {
+                            for (const subtaskData of item.subtasks) {
+                                const subtaskId = this.generateUniqueId();
+                                const newSubtask = {
+                                    id: subtaskId,
+                                    text: subtaskData.title,
+                                    completed: false,
+                                    parentId: taskId,
+                                    children: [],
+                                    expanded: true,
+                                    depth: 1,
+                                    priority: subtaskData.priority || 'media',
+                                    description: subtaskData.description || '',
+                                    dueDate: subtaskData.dueDate || this.generateDemoDate(1, 7),
+                                    repeat: null,
+                                    repeatCount: null,
+                                    tags: subtaskData.tags || []
+                                };
+                                newTask.children.push(newSubtask);
+                            }
+                        }
+                        
+                        const targetProjectForTask = createdProject || this.data[this.currentScenario].projects[this.currentProject];
+                        targetProjectForTask.tasks.push(newTask);
+                        results.push(`📝 Tarea creada: "${item.title}" (ID: ${taskId}) con ${newTask.children.length} subtareas`);
+                    }
                 }
+                
+                this.saveAndRender();
+                this.updateSelectors();
+                
+                return `✅ **Estructura inteligente creada:**\n\n${results.join('\n')}\n\n*Los elementos han sido creados y están disponibles en la interfaz.*`;
             }
-            
-            this.saveAndRender();
-            this.updateSelectors();
-            
-            return `✅ **Estructura inteligente creada:**\n\n${results.join('\n')}\n\n*Los elementos han sido creados y están disponibles en la interfaz.*`;
         }
         
         // Para Tasks, usar directamente los métodos del TaskManager
@@ -4624,9 +4742,9 @@ async manipularDatos(args, context) {
                     for (const tarea of datos) {
                         const parentId = tarea.parentId || null;
                         
-                        // Usar contexto previo si no se especifica proyecto/escenario
-                        const targetScenario = tarea.scenarioId || contexto_previo?.ultimo_escenario_id || this.currentScenario;
-                        const targetProject = tarea.projectId || contexto_previo?.ultimo_proyecto_id || this.currentProject;
+                        // Usar el contexto determinado al inicio
+                        const finalTargetScenario = tarea.scenarioId || targetScenario;
+                        const finalTargetProject = tarea.projectId || targetProject;
                         
                         // Crear tarea manualmente para evitar múltiples renderizados
                         const taskId = this.generateUniqueId();
@@ -4674,27 +4792,43 @@ async manipularDatos(args, context) {
                         
                         // Agregar la tarea al escenario y proyecto especificados
                         if (parentId) {
-                            const parent = this.findTaskByIdInAllScenarios(parentId);
+                            let parent;
+                            if (isCurrentProjectOnly) {
+                                // Buscar solo en el proyecto actual
+                                parent = this.findTaskById(parentId, this.data[targetScenario].projects[targetProject].tasks);
+                            } else {
+                                // Buscar en todos los escenarios
+                                parent = this.findTaskByIdInAllScenarios(parentId);
+                            }
+                            
                             if (parent) {
                                 parent.children.push(newTask);
                                 parent.expanded = true;
+                            } else {
+                                results.push(`❌ Tarea padre con ID ${parentId} no encontrada${isCurrentProjectOnly ? ' en el proyecto actual' : ''}`);
+                                continue;
                             }
                         } else {
                             // Asegurar que el escenario y proyecto existan
-                            if (!this.data[targetScenario]) {
-                                results.push(`❌ Escenario ${targetScenario} no encontrado`);
+                            if (!this.data[finalTargetScenario]) {
+                                results.push(`❌ Escenario ${finalTargetScenario} no encontrado`);
                                 continue;
                             }
-                            if (!this.data[targetScenario].projects[targetProject]) {
-                                results.push(`❌ Proyecto ${targetProject} no encontrado en escenario ${targetScenario}`);
+                            if (!this.data[finalTargetScenario].projects[finalTargetProject]) {
+                                results.push(`❌ Proyecto ${finalTargetProject} no encontrado en escenario ${finalTargetScenario}`);
                                 continue;
                             }
-                            this.data[targetScenario].projects[targetProject].tasks.push(newTask);
+                            this.data[finalTargetScenario].projects[finalTargetProject].tasks.push(newTask);
                         }
                         
                         const taskType = parentId ? 'Subtarea' : 'Tarea';
                         const parentInfo = parentId ? ` (subtarea de ID: ${parentId})` : '';
-                        const contextInfo = ` (Escenario: ${this.data[targetScenario]?.name || targetScenario}, Proyecto: ${this.data[targetScenario]?.projects[targetProject]?.name || targetProject})`;
+                        
+                        let contextInfo = '';
+                        if (!isCurrentProjectOnly) {
+                            contextInfo = ` (Escenario: ${this.data[finalTargetScenario]?.name || finalTargetScenario}, Proyecto: ${this.data[finalTargetScenario]?.projects[finalTargetProject]?.name || finalTargetProject})`;
+                        }
+                        
                         const subtasksInfo = newTask.children.length > 0 ? ` con ${newTask.children.length} subtareas` : '';
                         const propsInfo = [];
                         if (tarea.priority) propsInfo.push(`prioridad: ${tarea.priority}`);
@@ -4712,7 +4846,15 @@ async manipularDatos(args, context) {
                     let editResults = [];
                     for (const tarea of datos) {
                         if (tarea.id) {
-                            const task = this.findTaskByIdInAllScenarios(tarea.id);
+                            let task;
+                            if (isCurrentProjectOnly) {
+                                // Buscar solo en el proyecto actual
+                                task = this.findTaskById(tarea.id, this.data[targetScenario].projects[targetProject].tasks);
+                            } else {
+                                // Buscar en todos los escenarios
+                                task = this.findTaskByIdInAllScenarios(tarea.id);
+                            }
+                            
                             if (task) {
                                 if (tarea.title) task.text = tarea.title;
                                 if (tarea.description !== undefined) task.description = tarea.description;
@@ -4732,7 +4874,7 @@ async manipularDatos(args, context) {
                                 const changesInfo = changes.length ? ` - Cambios: ${changes.join(', ')}` : '';
                                 editResults.push(`✅ Tarea editada: "${task.text}" (ID: ${task.id})${changesInfo}`);
                             } else {
-                                editResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}`);
+                                editResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}${isCurrentProjectOnly ? ' en el proyecto actual' : ''}`);
                             }
                         }
                     }
@@ -4743,12 +4885,26 @@ async manipularDatos(args, context) {
                     let deleteResults = [];
                     for (const tarea of datos) {
                         if (tarea.id) {
-                            const task = this.findTaskByIdInAllScenarios(tarea.id);
+                            let task;
+                            if (isCurrentProjectOnly) {
+                                // Buscar y eliminar solo en el proyecto actual
+                                task = this.findTaskById(tarea.id, this.data[targetScenario].projects[targetProject].tasks);
+                                if (task) {
+                                    this.data[targetScenario].projects[targetProject].tasks = 
+                                        this.filterTasks(this.data[targetScenario].projects[targetProject].tasks, tarea.id);
+                                }
+                            } else {
+                                // Buscar y eliminar en todos los escenarios
+                                task = this.findTaskByIdInAllScenarios(tarea.id);
+                                if (task) {
+                                    this.removeTaskByIdFromAllScenarios(tarea.id);
+                                }
+                            }
+                            
                             if (task) {
-                                this.removeTaskByIdFromAllScenarios(tarea.id);
                                 deleteResults.push(`✅ Tarea eliminada: "${task.text}" (ID: ${tarea.id})`);
                             } else {
-                                deleteResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}`);
+                                deleteResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}${isCurrentProjectOnly ? ' en el proyecto actual' : ''}`);
                             }
                         }
                     }
@@ -4761,12 +4917,20 @@ async manipularDatos(args, context) {
                     const completed = operacion === 'marcar_completada';
                     for (const tarea of datos) {
                         if (tarea.id) {
-                            const task = this.findTaskByIdInAllScenarios(tarea.id);
+                            let task;
+                            if (isCurrentProjectOnly) {
+                                // Buscar solo en el proyecto actual
+                                task = this.findTaskById(tarea.id, this.data[targetScenario].projects[targetProject].tasks);
+                            } else {
+                                // Buscar en todos los escenarios
+                                task = this.findTaskByIdInAllScenarios(tarea.id);
+                            }
+                            
                             if (task) {
                                 task.completed = completed;
                                 toggleResults.push(`✅ Tarea ${completed ? 'completada' : 'marcada como pendiente'}: "${task.text}" (ID: ${task.id})`);
                             } else {
-                                toggleResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}`);
+                                toggleResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}${isCurrentProjectOnly ? ' en el proyecto actual' : ''}`);
                             }
                         }
                     }
@@ -4774,27 +4938,48 @@ async manipularDatos(args, context) {
                     return toggleResults.join('\n');
                 
                 case 'obtener':
-                    // Obtener TODAS las tareas de TODOS los escenarios y proyectos
-                    let allTasksText = '';
-                    Object.values(this.data).forEach(scenario => {
-                        allTasksText += `\n📁 ESCENARIO: ${scenario.name}\n`;
-                        if (scenario.projects) {
-                            Object.values(scenario.projects).forEach(project => {
-                                const tasks = project.tasks || [];
-                                allTasksText += `  📋 ${project.name}: ${tasks.length} tareas\n`;
-                                tasks.forEach(task => {
-                                    allTasksText += `    • ID: ${task.id} - ${task.text} ${task.completed ? '✅' : '⏳'}\n`;
-                                    if (task.children && task.children.length > 0) {
-                                        task.children.forEach(subtask => {
-                                            allTasksText += `      ↳ ID: ${subtask.id} - ${subtask.text} ${subtask.completed ? '✅' : '⏳'}\n`;
-                                        });
-                                    }
+                    if (isCurrentProjectOnly) {
+                        // Obtener solo las tareas del proyecto actual
+                        const currentScenarioData = this.data[targetScenario];
+                        const currentProjectData = currentScenarioData?.projects[targetProject];
+                        const tasks = currentProjectData?.tasks || [];
+                        
+                        let tasksText = `\n📁 ESCENARIO ACTUAL: ${currentScenarioData?.name}\n`;
+                        tasksText += `  📋 PROYECTO ACTUAL: ${currentProjectData?.name}: ${tasks.length} tareas\n`;
+                        
+                        tasks.forEach(task => {
+                            tasksText += `    • ID: ${task.id} - ${task.text} ${task.completed ? '✅' : '⏳'}\n`;
+                            if (task.children && task.children.length > 0) {
+                                task.children.forEach(subtask => {
+                                    tasksText += `      ↳ ID: ${subtask.id} - ${subtask.text} ${subtask.completed ? '✅' : '⏳'}\n`;
                                 });
-                            });
-                        }
-                    });
-                    
-                    return `📊 RESUMEN COMPLETO DE TAREAS:${allTasksText}`;
+                            }
+                        });
+                        
+                        return `📊 TAREAS DEL PROYECTO ACTUAL:${tasksText}`;
+                    } else {
+                        // Obtener TODAS las tareas de TODOS los escenarios y proyectos
+                        let allTasksText = '';
+                        Object.values(this.data).forEach(scenario => {
+                            allTasksText += `\n📁 ESCENARIO: ${scenario.name}\n`;
+                            if (scenario.projects) {
+                                Object.values(scenario.projects).forEach(project => {
+                                    const tasks = project.tasks || [];
+                                    allTasksText += `  📋 ${project.name}: ${tasks.length} tareas\n`;
+                                    tasks.forEach(task => {
+                                        allTasksText += `    • ID: ${task.id} - ${task.text} ${task.completed ? '✅' : '⏳'}\n`;
+                                        if (task.children && task.children.length > 0) {
+                                            task.children.forEach(subtask => {
+                                                allTasksText += `      ↳ ID: ${subtask.id} - ${subtask.text} ${subtask.completed ? '✅' : '⏳'}\n`;
+                                            });
+                                        }
+                                    });
+                                });
+                            }
+                        });
+                        
+                        return `📊 RESUMEN COMPLETO DE TAREAS:${allTasksText}`;
+                    }
                 
                 default:
                     return `❌ Operación "${operacion}" no reconocida para tareas`;
@@ -4803,11 +4988,15 @@ async manipularDatos(args, context) {
         
         // Para proyectos
         if (tipo === 'projects') {
+            if (isCurrentProjectOnly) {
+                return `❌ En modo "Solo Proyecto Actual" no se pueden crear nuevos proyectos. Cambia al modo completo para esta operación.`;
+            }
+            
             switch(operacion) {
                 case 'agregar':
                     let projectResults = [];
                     for (const proyecto of datos) {
-                        const targetScenario = proyecto.scenarioId || contexto_previo?.ultimo_escenario_id || this.currentScenario;
+                        const finalTargetScenario = proyecto.scenarioId || targetScenario;
                         const newProject = {
                             id: this.projectIdCounter++,
                             name: proyecto.title,
@@ -4816,12 +5005,12 @@ async manipularDatos(args, context) {
                             tasks: []
                         };
                         // Agregar al escenario especificado
-                        if (!this.data[targetScenario]) {
-                            projectResults.push(`❌ Escenario ${targetScenario} no encontrado`);
+                        if (!this.data[finalTargetScenario]) {
+                            projectResults.push(`❌ Escenario ${finalTargetScenario} no encontrado`);
                             continue;
                         }
-                        this.data[targetScenario].projects[newProject.id] = newProject;
-                        projectResults.push(`✅ Proyecto agregado: "${proyecto.title}" (ID: ${newProject.id}) en escenario "${this.data[targetScenario].name}"`);
+                        this.data[finalTargetScenario].projects[newProject.id] = newProject;
+                        projectResults.push(`✅ Proyecto agregado: "${proyecto.title}" (ID: ${newProject.id}) en escenario "${this.data[finalTargetScenario].name}"`);
                     }
                     this.saveData();
                     this.updateSelectors();
@@ -4847,6 +5036,10 @@ async manipularDatos(args, context) {
         
         // Para escenarios
         if (tipo === 'scenarios') {
+            if (isCurrentProjectOnly) {
+                return `❌ En modo "Solo Proyecto Actual" no se pueden crear nuevos escenarios. Cambia al modo completo para esta operación.`;
+            }
+            
             switch(operacion) {
                 case 'agregar':
                     let scenarioResults = [];
@@ -4953,6 +5146,47 @@ buildSystemPrompt(context) {
     systemPrompt += `IMPORTANTE: Cuando el usuario diga "mañana", usa la fecha: ${tomorrow}\n`;
     systemPrompt += `Cuando diga "hoy", usa la fecha: ${today}\n\n`;
     
+// AQUÍ ES DONDE REALMENTE LIMITAMOS EL JSON QUE SE ENVÍA
+    let dataToSend;
+    
+    if (context.mode === 'current_project_only') {
+        // MODO: Solo proyecto actual - ENVIAR SOLO ESTE JSON (AHORRO DE TOKENS)
+        systemPrompt += `CONTEXTO ESPECÍFICO - SOLO PROYECTO ACTUAL:\n`;
+        systemPrompt += `Trabajando ÚNICAMENTE en el proyecto actual:\n`;
+        systemPrompt += `- Escenario: ${context.scenario?.name || 'Sin nombre'} (ID: ${context.scenario?.id})\n`;
+        systemPrompt += `- Proyecto: ${context.project?.name || 'Sin nombre'} (ID: ${context.project?.id})\n`;
+        systemPrompt += `- Descripción: ${context.project?.description || 'Sin descripción'}\n\n`;
+        
+        // SOLO enviar el JSON del proyecto actual (minimizando tokens)
+        dataToSend = {
+            currentScenario: {
+                id: context.scenario?.id,
+                name: context.scenario?.name,
+                icon: context.scenario?.icon,
+                description: context.scenario?.description
+            },
+            currentProject: {
+                id: context.project?.id,
+                name: context.project?.name,
+                icon: context.project?.icon,
+                description: context.project?.description,
+                tasks: context.tasks || []
+            },
+            mode: 'current_project_only'
+        };
+        
+        systemPrompt += `DATOS DISPONIBLES (SOLO PROYECTO ACTUAL):\n`;
+        systemPrompt += `${JSON.stringify(dataToSend, null, 2)}\n\n`;
+        
+        systemPrompt += `**CAPACIDADES LIMITADAS:**\n`;
+        systemPrompt += `- Solo puedes trabajar con las tareas de este proyecto específico\n`;
+        systemPrompt += `- No tienes acceso a otros escenarios o proyectos\n`;
+        systemPrompt += `- Todas las operaciones se limitan al contexto actual\n`;
+        systemPrompt += `- Al crear nuevas tareas, van automáticamente a este proyecto\n`;
+        systemPrompt += `- IDs de contexto: Escenario ${context.scenario?.id}, Proyecto ${context.project?.id}\n\n`;
+        
+    } else {
+
     // MODO GENERAL: Acceso completo a toda la base de datos
     systemPrompt += `BASE DE DATOS COMPLETA:\n`;
     systemPrompt += `Tienes acceso completo a toda la información del usuario:\n`;
@@ -5007,28 +5241,44 @@ buildSystemPrompt(context) {
     systemPrompt += `5. GENERA tareas que realmente se harían en ese tipo de proyecto\n\n`;
     
     systemPrompt += `Responde siempre con razonamiento inteligente y contenido útil para el proyecto específico solicitado.`;
-    
+    }
     return systemPrompt;
 }
 // buildSystemPrompt - Termina Aqui
     
     // getSelectedContext - Inicia Aqui
 getSelectedContext() {
-    // En modo general, devolver toda la base de datos
-    const context = {
-        scenarios: Object.values(this.data),
-        projects: [],
-        allData: this.data
-    };
-    
-    // Agregar todos los proyectos de todos los escenarios
-    Object.values(this.data).forEach(scenario => {
-        if (scenario.projects) {
-            context.projects.push(...Object.values(scenario.projects));
-        }
-    });
-    
-    return context;
+    if (this.currentProjectOnlyMode) {
+        // Modo: Solo proyecto actual
+        const currentScenario = this.data[this.currentScenario];
+        const currentProject = currentScenario?.projects[this.currentProject];
+        
+        const context = {
+            scenario: currentScenario,
+            project: currentProject,
+            tasks: currentProject?.tasks || [],
+            mode: 'current_project_only'
+        };
+        
+        return context;
+    } else {
+        // Modo: Toda la base de datos (comportamiento original)
+        const context = {
+            scenarios: Object.values(this.data),
+            projects: [],
+            allData: this.data,
+            mode: 'all_data'
+        };
+        
+        // Agregar todos los proyectos de todos los escenarios
+        Object.values(this.data).forEach(scenario => {
+            if (scenario.projects) {
+                context.projects.push(...Object.values(scenario.projects));
+            }
+        });
+        
+        return context;
+    }
 }
 // getSelectedContext - Termina Aqui
     
@@ -5064,95 +5314,110 @@ getSelectedContext() {
     // renderChatMessages - Termina Aqui
     
     // saveAssistantData - Inicia Aqui
-    saveAssistantData() {
-        try {
-            localStorage.setItem('taskTreeAIConfig', JSON.stringify(this.aiConfig));
-            localStorage.setItem('taskTreeAIStats', JSON.stringify(this.aiStats));
-            localStorage.setItem('taskTreeAIMessages', JSON.stringify(this.mensajes));
-            this.savePromptContexts();
-        } catch (error) {
-            // Error guardando datos del asistente
-        }
+saveAssistantData() {
+    try {
+        localStorage.setItem('taskTreeAIConfig', JSON.stringify(this.aiConfig));
+        localStorage.setItem('taskTreeAIStats', JSON.stringify(this.aiStats));
+        localStorage.setItem('taskTreeAIMessages', JSON.stringify(this.mensajes));
+        localStorage.setItem('taskTreeCurrentProjectOnly', JSON.stringify(this.currentProjectOnlyMode));
+        this.savePromptContexts();
+    } catch (error) {
+        // Error guardando datos del asistente
     }
-    // saveAssistantData - Termina Aqui
+}
+// saveAssistantData - Termina Aqui
     
     // showAIConfigModal - Inicia Aqui
     showAIConfigModal() {
-        const modalContent = `
-            <div class="ai-config-modal">
-                <h3>Configuración del Asistente IA</h3>
-                
-                <div class="config-section">
-                    <label for="ai-api-key">API Key:</label>
-                    <input type="password" id="ai-api-key" value="${this.aiConfig.apiKey}" 
-                           placeholder="Introduce tu API Key">
-                </div>
-                
-                <div class="config-section">
-                    <label for="ai-model">Modelo:</label>
-                    <select id="ai-model">
+    const modalContent = `
+        <div class="ai-config-modal">
+            <h3>Configuración del Asistente IA</h3>
+            
+            <div class="config-section">
+                <label for="ai-api-key">API Key:</label>
+                <input type="password" id="ai-api-key" value="${this.aiConfig.apiKey}" 
+                       placeholder="Introduce tu API Key">
+            </div>
+            
+            <div class="config-section">
+                <label for="ai-model">Modelo:</label>
+                <select id="ai-model">
+                    <optgroup label="GPT-4.1 Series (Recomendado)">
+                        <option value="gpt-4.1-nano" ${this.aiConfig.model === 'gpt-4.1-nano' ? 'selected' : ''}>
+                            GPT-4.1 Nano ($0.10/$0.40 por 1M tokens) - 1M context
+                        </option>
+                        <option value="gpt-4.1-mini" ${this.aiConfig.model === 'gpt-4.1-mini' ? 'selected' : ''}>
+                            GPT-4.1 Mini ($0.40/$1.60 por 1M tokens) - 1M context
+                        </option>
+                        <option value="gpt-4.1" ${this.aiConfig.model === 'gpt-4.1' ? 'selected' : ''}>
+                            GPT-4.1 ($2.00/$8.00 por 1M tokens) - 1M context
+                        </option>
+                    </optgroup>
+                    <optgroup label="GPT-5 Series (Legacy)">
                         <option value="gpt-5-nano" ${this.aiConfig.model === 'gpt-5-nano' ? 'selected' : ''}>
-                            GPT-5 Nano ($0.00005/$0.0004 por 1K tokens)
+                            GPT-5 Nano ($0.05/$0.40 por 1K tokens)
                         </option>
                         <option value="gpt-5-mini" ${this.aiConfig.model === 'gpt-5-mini' ? 'selected' : ''}>
-                            GPT-5 Mini ($0.00025/$0.002 por 1K tokens)
+                            GPT-5 Mini ($0.25/$2.00 por 1K tokens)
                         </option>
                         <option value="gpt-5" ${this.aiConfig.model === 'gpt-5' ? 'selected' : ''}>
-                            GPT-5 ($0.00125/$0.01 por 1K tokens)
+                            GPT-5 ($1.25/$10.00 por 1K tokens)
                         </option>
-                    </select>
-                </div>
-                
-                <div class="config-section">
-                    <label for="ai-max-tokens">Máximo de Tokens:</label>
-                    <input type="number" id="ai-max-tokens" value="${this.aiConfig.maxTokens}" 
-                           min="100" max="4000" step="100">
-                </div>
-                
-                <div class="config-section">
-                    <label for="ai-temperature">Creatividad (Temperature):</label>
-                    <input type="range" id="ai-temperature" value="${this.aiConfig.temperature}" 
-                           min="0" max="1" step="0.1">
-                    <span class="range-value">${this.aiConfig.temperature}</span>
-                </div>
-                
-                <div class="config-section">
-                    <label for="ai-history-limit">Límite del Historial:</label>
-                    <input type="number" id="ai-history-limit" value="${this.aiConfig.historyLimit}" 
-                           min="5" max="50" step="5">
-                </div>
-                
-                <div class="config-section">
-                    <label for="system-prompt-input">System Prompt:</label>
-                    <textarea id="system-prompt-input" rows="6" 
-                              placeholder="Escribe el prompt del sistema...">${this.promptContexts.general.systemPrompt}</textarea>
-                    <small class="help-text">Este prompt define cómo se comportará el asistente.</small>
-                </div>
-                
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="taskManager.hideModal()">Cancelar</button>
-                    <button type="button" class="btn-primary" onclick="taskManager.saveAIConfig()">Guardar</button>
-                </div>
+                    </optgroup>
+                </select>
+                <small class="help-text">Los modelos GPT-4.1 tienen ventana de contexto de 1M tokens y mejor eficiencia.</small>
             </div>
-        `;
-        
-        this.showAssistantModal('Configuración IA', modalContent);
-        
-        // Actualizar valor de temperatura en tiempo real
-        setTimeout(() => {
-            const temperatureRange = document.getElementById('ai-temperature');
-            const temperatureValue = document.querySelector('.range-value');
-            if (temperatureRange && temperatureValue) {
-                temperatureRange.addEventListener('input', (e) => {
-                    temperatureValue.textContent = e.target.value;
-                });
-            }
-        }, 100);
-    }
+            
+            <div class="config-section">
+                <label for="ai-max-tokens">Máximo de Tokens:</label>
+                <input type="number" id="ai-max-tokens" value="${this.aiConfig.maxTokens}" 
+                       min="100" max="4000" step="100">
+            </div>
+            
+            <div class="config-section">
+                <label for="ai-temperature">Creatividad (Temperature):</label>
+                <input type="range" id="ai-temperature" value="${this.aiConfig.temperature}" 
+                       min="0" max="1" step="0.1">
+                <span class="range-value">${this.aiConfig.temperature}</span>
+            </div>
+            
+            <div class="config-section">
+                <label for="ai-history-limit">Límite del Historial:</label>
+                <input type="number" id="ai-history-limit" value="${this.aiConfig.historyLimit}" 
+                       min="5" max="50" step="5">
+            </div>
+            
+            <div class="config-section">
+                <label for="system-prompt-input">System Prompt:</label>
+                <textarea id="system-prompt-input" rows="6" 
+                          placeholder="Escribe el prompt del sistema...">${this.promptContexts.general.systemPrompt}</textarea>
+                <small class="help-text">Este prompt define cómo se comportará el asistente.</small>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="taskManager.hideModal()">Cancelar</button>
+                <button type="button" class="btn-primary" onclick="taskManager.saveAIConfig()">Guardar</button>
+            </div>
+        </div>
+    `;
+    
+    this.showAssistantModal('Configuración IA', modalContent);
+    
+    // Actualizar valor de temperatura en tiempo real
+    setTimeout(() => {
+        const temperatureRange = document.getElementById('ai-temperature');
+        const temperatureValue = document.querySelector('.range-value');
+        if (temperatureRange && temperatureValue) {
+            temperatureRange.addEventListener('input', (e) => {
+                temperatureValue.textContent = e.target.value;
+            });
+        }
+    }, 100);
+}
     // showAIConfigModal - Termina Aqui
     
     // saveAIConfig - Inicia Aqui
-    saveAIConfig() {
+        saveAIConfig() {
         const apiKey = document.getElementById('ai-api-key').value;
         const model = document.getElementById('ai-model').value;
         const maxTokens = parseInt(document.getElementById('ai-max-tokens').value);
@@ -5175,6 +5440,11 @@ getSelectedContext() {
         
         // Actualizar modelo actual en estadísticas
         const modelNames = {
+            // GPT-4.1 Series
+            'gpt-4.1-nano': 'GPT-4.1 Nano',
+            'gpt-4.1-mini': 'GPT-4.1 Mini',
+            'gpt-4.1': 'GPT-4.1',
+            // GPT-5 Series (Legacy)
             'gpt-5-nano': 'GPT-5 Nano',
             'gpt-5-mini': 'GPT-5 Mini',
             'gpt-5': 'GPT-5'
@@ -5190,7 +5460,7 @@ getSelectedContext() {
     // saveAIConfig - Termina Aqui
     
     // showAIStatsModal - Inicia Aqui
-    showAIStatsModal() {
+        showAIStatsModal() {
         const today = new Date().toDateString();
         if (this.aiStats.lastResetDate !== today) {
             this.aiStats.todayQueries = 0;
@@ -5236,16 +5506,31 @@ getSelectedContext() {
                 </div>
                 
                 <div class="pricing-info">
-                    <h4>Precios por Modelo (por 1K tokens)</h4>
+                    <h4>Precios por Modelo</h4>
                     <div class="pricing-grid">
-                        <div class="pricing-item">
-                            <strong>GPT-5 Nano:</strong> $0.00005 (entrada) / $0.0004 (salida)
+                        <div class="pricing-section">
+                            <h5>GPT-4.1 Series (Recomendado)</h5>
+                            <div class="pricing-item">
+                                <strong>GPT-4.1 Nano:</strong> $0.10/$0.40 por 1M tokens (1M context)
+                            </div>
+                            <div class="pricing-item">
+                                <strong>GPT-4.1 Mini:</strong> $0.40/$1.60 por 1M tokens (1M context)
+                            </div>
+                            <div class="pricing-item">
+                                <strong>GPT-4.1:</strong> $2.00/$8.00 por 1M tokens (1M context)
+                            </div>
                         </div>
-                        <div class="pricing-item">
-                            <strong>GPT-5 Mini:</strong> $0.00025 (entrada) / $0.002 (salida)
-                        </div>
-                        <div class="pricing-item">
-                            <strong>GPT-5:</strong> $0.00125 (entrada) / $0.01 (salida)
+                        <div class="pricing-section">
+                            <h5>GPT-5 Series (Legacy)</h5>
+                            <div class="pricing-item">
+                                <strong>GPT-5 Nano:</strong> $0.05/$0.40 por 1K tokens
+                            </div>
+                            <div class="pricing-item">
+                                <strong>GPT-5 Mini:</strong> $0.25/$2.00 por 1K tokens
+                            </div>
+                            <div class="pricing-item">
+                                <strong>GPT-5:</strong> $1.25/$10.00 por 1K tokens
+                            </div>
                         </div>
                     </div>
                 </div>

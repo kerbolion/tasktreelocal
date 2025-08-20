@@ -3097,7 +3097,9 @@ mark {
     letter-spacing: 0.5px;
 }
 
-/* Información de Precios */
+/* Actualización de estilos para la información de precios */
+
+/* Información de Precios mejorada */
 .pricing-info {
     background: #fefce8;
     border: 1px solid #facc15;
@@ -3108,21 +3110,40 @@ mark {
 
 .pricing-info h4 {
     color: #92400e;
-    margin-bottom: 12px;
-    font-size: 14px;
+    margin-bottom: 16px;
+    font-size: 16px;
     font-weight: 600;
+    text-align: center;
 }
 
 .pricing-grid {
     display: grid;
-    gap: 8px;
+    gap: 16px;
+    grid-template-columns: 1fr;
+}
+
+.pricing-section {
+    background: white;
+    border-radius: 6px;
+    padding: 12px;
+    border: 1px solid #fde047;
+}
+
+.pricing-section h5 {
+    color: #92400e;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid #fde047;
+    padding-bottom: 4px;
 }
 
 .pricing-item {
     font-size: 13px;
     color: #78716c;
-    padding: 6px 0;
-    border-bottom: 1px solid #fde047;
+    padding: 4px 0;
+    border-bottom: 1px solid #fef7cd;
+    line-height: 1.4;
 }
 
 .pricing-item:last-child {
@@ -3130,6 +3151,103 @@ mark {
 }
 
 .pricing-item strong {
+    color: #92400e;
+    font-weight: 600;
+}
+
+/* Mejoras para el select de modelos */
+.config-section select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    background: white;
+    font-family: inherit;
+}
+
+.config-section select optgroup {
+    font-weight: bold;
+    color: #374151;
+    background: #f9fafb;
+}
+
+.config-section select option {
+    font-weight: normal;
+    color: #374151;
+    padding: 8px 12px;
+    background: white;
+}
+
+.config-section select option:checked {
+    background: #3b82f6;
+    color: white;
+}
+
+/* Responsive para la información de precios */
+@media (max-width: 768px) {
+    .pricing-grid {
+        gap: 12px;
+    }
+    
+    .pricing-section {
+        padding: 10px;
+    }
+    
+    .pricing-section h5 {
+        font-size: 13px;
+    }
+    
+    .pricing-item {
+        font-size: 12px;
+        padding: 3px 0;
+    }
+    
+    .pricing-info h4 {
+        font-size: 15px;
+        margin-bottom: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pricing-info {
+        padding: 12px;
+    }
+    
+    .pricing-section {
+        padding: 8px;
+    }
+    
+    .pricing-item {
+        font-size: 11px;
+        line-height: 1.3;
+    }
+    
+    .pricing-section h5 {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+}
+
+/* Highlight para modelos recomendados */
+.config-section select optgroup[label*="GPT-4.1"] {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.config-section select optgroup[label*="GPT-4.1"] option {
+    background: #f0f9ff;
+    color: #0369a1;
+}
+
+.config-section select optgroup[label*="Legacy"] {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.config-section select optgroup[label*="Legacy"] option {
+    background: #fffbeb;
     color: #92400e;
 }
 
@@ -3224,5 +3342,101 @@ mark {
     
     .config-section input[type="range"] {
         width: calc(100% - 50px);
+    }
+}
+
+/* Estilos para el checkbox "Solo Proyecto Actual" */
+.assistant-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.assistant-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    user-select: none;
+}
+
+.assistant-checkbox-container:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.assistant-checkbox {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: #ffffff;
+    filter: brightness(1.2);
+}
+
+.assistant-checkbox-text {
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Responsive para el control del asistente */
+@media (max-width: 768px) {
+    .assistant-controls {
+        gap: 6px;
+        justify-content: space-between;
+        width: 100%;
+    }
+    
+    .assistant-checkbox-container {
+        order: 1;
+        flex: 1;
+        justify-content: flex-start;
+        padding: 6px 8px;
+    }
+    
+    .toggle-btn {
+        order: 2;
+        flex-shrink: 0;
+    }
+    
+    .config-btn {
+        order: 3;
+        flex-shrink: 0;
+    }
+    
+    .assistant-checkbox-text {
+        font-size: 11px;
+    }
+    
+    .assistant-checkbox {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .assistant-controls {
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+    
+    .assistant-checkbox-container {
+        order: 1;
+        justify-content: center;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+    }
+    
+    .toggle-btn,
+    .config-btn {
+        order: 2;
+        width: 100%;
+        text-align: center;
     }
 }
