@@ -4429,114 +4429,109 @@ async manipularDatos(args, context) {
     const { operacion, tipo, datos = [], escenario, tema, contexto_previo } = args;
     
     try {
-        // NUEVA FUNCIONALIDAD: Crear estructura completa demostrativa
+        // NUEVA FUNCIONALIDAD: Crear estructura completa demostrativa - CON IA
         if (tipo === 'estructura_completa' || operacion === 'crear_estructura_completa') {
-            const temaDemo = tema || 'desarrollo web';
-            const demoContent = this.createDemoContent(temaDemo);
-            
-            // 1. Crear el escenario
-            const scenarioId = this.scenarioIdCounter++;
-            const newScenario = {
-                id: scenarioId,
-                name: demoContent.scenario.name,
-                icon: demoContent.scenario.icon,
-                description: demoContent.scenario.description,
-                projects: {
-                    1: { 
-                        id: 1, 
-                        name: 'Sin proyecto', 
-                        icon: '📋', 
-                        description: 'Tareas sin categorizar', 
-                        tasks: [] 
-                    }
-                }
-            };
-            
-            // 2. Crear el proyecto dentro del escenario
-            const projectId = this.projectIdCounter++;
-            const newProject = {
-                id: projectId,
-                name: demoContent.project.name,
-                icon: demoContent.project.icon,
-                description: demoContent.project.description,
-                tasks: []
-            };
-            
-            newScenario.projects[projectId] = newProject;
-            
-            // 3. Crear las tareas con sus subtareas
-            const createdTasks = [];
-            for (const taskData of demoContent.tasks) {
-                const taskId = this.generateUniqueId();
-                const newTask = {
-                    id: taskId,
-                    text: taskData.title,
-                    completed: false,
-                    parentId: null,
-                    children: [],
-                    expanded: true,
-                    depth: 0,
-                    priority: taskData.priority || 'media',
-                    description: taskData.description || '',
-                    dueDate: this.generateDemoDate(),
-                    repeat: null,
-                    repeatCount: null,
-                    tags: taskData.tags || []
-                };
-                
-                // Crear subtareas
-                if (taskData.subtasks) {
-                    for (const subtaskData of taskData.subtasks) {
-                        const subtaskId = this.generateUniqueId();
-                        const newSubtask = {
-                            id: subtaskId,
-                            text: subtaskData.title,
-                            completed: false,
-                            parentId: taskId,
-                            children: [],
-                            expanded: true,
-                            depth: 1,
-                            priority: subtaskData.priority || 'media',
-                            description: subtaskData.description || '',
-                            dueDate: this.generateDemoDate(1, 7), // Entre 1 y 7 días
-                            repeat: null,
-                            repeatCount: null,
-                            tags: subtaskData.tags || []
-                        };
-                        newTask.children.push(newSubtask);
-                    }
-                }
-                
-                newProject.tasks.push(newTask);
-                createdTasks.push(newTask);
+            // La IA debe haber generado la estructura en los datos
+            if (!datos || datos.length === 0) {
+                return `❌ No se proporcionaron datos para crear la estructura. La IA debe generar el contenido específico para "${tema}".`;
             }
             
-            // 4. Guardar en la base de datos
-            this.data[scenarioId] = newScenario;
+            let results = [];
+            let createdScenario = null;
+            let createdProject = null;
+            
+            // Procesar cada elemento según su tipo
+            for (const item of datos) {
+                if (item.tipo === 'escenario') {
+                    const scenarioId = this.scenarioIdCounter++;
+                    const newScenario = {
+                        id: scenarioId,
+                        name: item.title,
+                        icon: item.icon || '📁',
+                        description: item.description || '',
+                        projects: {
+                            1: { 
+                                id: 1, 
+                                name: 'Sin proyecto', 
+                                icon: '📋', 
+                                description: 'Tareas sin categorizar', 
+                                tasks: [] 
+                            }
+                        }
+                    };
+                    
+                    this.data[scenarioId] = newScenario;
+                    createdScenario = newScenario;
+                    results.push(`📁 Escenario creado: "${item.title}" (ID: ${scenarioId})`);
+                }
+                
+                if (item.tipo === 'proyecto') {
+                    const projectId = this.projectIdCounter++;
+                    const newProject = {
+                        id: projectId,
+                        name: item.title,
+                        icon: item.icon || '📋',
+                        description: item.description || '',
+                        tasks: []
+                    };
+                    
+                    const targetScenario = createdScenario || this.data[this.currentScenario];
+                    targetScenario.projects[projectId] = newProject;
+                    createdProject = newProject;
+                    results.push(`📋 Proyecto creado: "${item.title}" (ID: ${projectId})`);
+                }
+                
+                if (item.tipo === 'tarea') {
+                    const taskId = this.generateUniqueId();
+                    const newTask = {
+                        id: taskId,
+                        text: item.title,
+                        completed: false,
+                        parentId: null,
+                        children: [],
+                        expanded: true,
+                        depth: 0,
+                        priority: item.priority || 'media',
+                        description: item.description || '',
+                        dueDate: item.dueDate || this.generateDemoDate(),
+                        repeat: null,
+                        repeatCount: null,
+                        tags: item.tags || []
+                    };
+                    
+                    // Agregar subtareas si existen
+                    if (item.subtasks) {
+                        for (const subtaskData of item.subtasks) {
+                            const subtaskId = this.generateUniqueId();
+                            const newSubtask = {
+                                id: subtaskId,
+                                text: subtaskData.title,
+                                completed: false,
+                                parentId: taskId,
+                                children: [],
+                                expanded: true,
+                                depth: 1,
+                                priority: subtaskData.priority || 'media',
+                                description: subtaskData.description || '',
+                                dueDate: subtaskData.dueDate || this.generateDemoDate(1, 7),
+                                repeat: null,
+                                repeatCount: null,
+                                tags: subtaskData.tags || []
+                            };
+                            newTask.children.push(newSubtask);
+                        }
+                    }
+                    
+                    const targetProject = createdProject || this.data[this.currentScenario].projects[this.currentProject];
+                    targetProject.tasks.push(newTask);
+                    results.push(`📝 Tarea creada: "${item.title}" (ID: ${taskId}) con ${newTask.children.length} subtareas`);
+                }
+            }
+            
             this.saveAndRender();
-            
-            // 5. Actualizar selectores para mostrar el nuevo contenido
             this.updateSelectors();
             
-            // 6. Cambiar al nuevo escenario y proyecto
-            this.currentScenario = scenarioId;
-            this.currentProject = projectId;
-            this.updateSelectors();
-            this.render();
-            
-            return `✅ **Estructura completa creada para "${temaDemo}":**
-            
-📁 **Escenario:** ${demoContent.scenario.name} (ID: ${scenarioId})
-📋 **Proyecto:** ${demoContent.project.name} (ID: ${projectId})
-📝 **Tareas creadas:** ${createdTasks.length}
-📋 **Subtareas totales:** ${createdTasks.reduce((total, task) => total + task.children.length, 0)}
-
-**Detalles:**
-${createdTasks.map(task => 
-    `• ${task.text} (ID: ${task.id}) - ${task.children.length} subtareas`
-).join('\n')}
-
-*El escenario y proyecto han sido seleccionados automáticamente en la interfaz.*`;
+            return `✅ **Estructura inteligente creada:**\n\n${results.join('\n')}\n\n*Los elementos han sido creados y están disponibles en la interfaz.*`;
         }
         
         // Para Tasks, usar directamente los métodos del TaskManager
