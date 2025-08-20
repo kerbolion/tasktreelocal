@@ -3113,7 +3113,10 @@ class TaskManager {
         const allTags = new Set();
         this.getAllTasks().forEach(task => {
             if (task.tags) {
-                task.tags.forEach(tag => allTags.add(tag));
+                task.tags.forEach(tag => {
+                    const tagText = typeof tag === 'string' ? tag : tag.text;
+                    allTags.add(tagText);
+                });
             }
         });
 
@@ -3181,7 +3184,12 @@ class TaskManager {
         if (this.activeTagFilters.size > 0) {
             tasks = tasks.filter(task => {
                 if (!task.tags) return false;
-                return Array.from(this.activeTagFilters).some(tag => task.tags.includes(tag));
+                return Array.from(this.activeTagFilters).some(filterTag => {
+                    return task.tags.some(taskTag => {
+                        const taskTagText = typeof taskTag === 'string' ? taskTag : taskTag.text;
+                        return taskTagText === filterTag;
+                    });
+                });
             });
         }
 
