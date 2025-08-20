@@ -1,3 +1,4 @@
+// TaskManager Class - Inicia Aqui
 class TaskManager {
     constructor() {
         this.taskIdCounter = 1;
@@ -23,9 +24,6 @@ class TaskManager {
         
         // Variables del asistente IA
         this.assistantVisible = false;
-        this.currentModule = 'tasks';
-        this.selectedScenarios = new Set();
-        this.selectedProjects = new Set();
         this.mensajes = [];
         
         // Configuración de IA
@@ -60,13 +58,6 @@ class TaskManager {
                 icon: '🤖',
                 description: 'Asistente general para cualquier consulta',
                 systemPrompt: 'Eres un asistente útil y amigable. Ayuda al usuario con cualquier consulta de manera clara y concisa.'
-            },
-            tasks: {
-                id: 'tasks',
-                name: 'Tareas',
-                icon: '📋',
-                description: 'Especializado en gestión de tareas y productividad',
-                systemPrompt: 'Eres un asistente especializado en gestión de tareas y productividad. Ayuda al usuario a organizar, planificar y completar sus tareas de manera eficiente.'
             }
         };
         
@@ -81,6 +72,7 @@ class TaskManager {
         this.startTimeBadgeUpdater();
     }
 
+    // initializeDefaultData - Inicia Aqui
     initializeDefaultData() {
         return {
             1: {
@@ -94,7 +86,9 @@ class TaskManager {
             }
         };
     }
+    // initializeDefaultData - Termina Aqui
 
+    // init - Inicia Aqui
     init() {
         this.loadData();
         this.bindEvents();
@@ -103,8 +97,9 @@ class TaskManager {
         this.updateFilterTags();
         this.initAssistant();
     }
+    // init - Termina Aqui
 
-    // === EVENTOS UNIFICADOS ===
+    // bindEvents - Inicia Aqui
     bindEvents() {
         // Delegación de eventos unificada
         document.addEventListener('click', this.handleClick.bind(this));
@@ -115,21 +110,15 @@ class TaskManager {
         document.addEventListener('input', this.handleInput.bind(this));
         document.addEventListener('blur', this.handleBlur.bind(this), true);
     }
+    // bindEvents - Termina Aqui
 
+    // handleClick - Inicia Aqui
     handleClick(e) {
         // Manejar eventos del asistente
         if (e.target.id === 'toggleAssistant') {
             this.toggleAssistant();
             return;
         }
-        
-        if (e.target.classList.contains('module-option')) {
-            const module = e.target.dataset.module;
-            this.selectModule(module);
-            return;
-        }
-        
-        // Los clics del asistente ahora se manejan con onclick en el HTML generado dinámicamente
         
         if (e.target.id === 'sendButton') {
             this.sendMessage();
@@ -167,12 +156,6 @@ class TaskManager {
                 this.updateButtonStates(e.target);
             }, 10);
         }
-        
-        // Comentado: No cerrar modal al hacer clic afuera
-        // if (e.target.classList.contains('modal')) {
-        //     this.hideModal();
-        //     return;
-        // }
 
         // Verificar botón de cerrar modal específicamente
         if (e.target.id === 'modal-close' || e.target.classList.contains('close-btn')) {
@@ -245,18 +228,18 @@ class TaskManager {
             actions[action]();
         }
     }
+    // handleClick - Termina Aqui
 
+    // handleChange - Inicia Aqui
     handleChange(e) {
         if (e.target.id === 'scenarioSelect') {
             this.currentScenario = parseInt(e.target.value);
             this.currentProject = this.getFirstProjectId();
             this.updateSelectors();
             this.render();
-            this.updateAssistantContext();
         } else if (e.target.id === 'projectSelect') {
             this.currentProject = parseInt(e.target.value);
             this.render();
-            this.updateAssistantContext();
         } else if (e.target.id === 'edit-task-repeat') {
             const repeatCountInput = document.getElementById('edit-task-repeat-count');
             if (e.target.value) {
@@ -270,7 +253,9 @@ class TaskManager {
             }
         }
     }
+    // handleChange - Termina Aqui
 
+    // handleSubmit - Inicia Aqui
     handleSubmit(e) {
         e.preventDefault();
         
@@ -285,7 +270,9 @@ class TaskManager {
             formHandler();
         }
     }
+    // handleSubmit - Termina Aqui
 
+    // handleKeydown - Inicia Aqui
     handleKeydown(e) {
         // Manejar Enter en el chat del asistente
         if (e.key === 'Enter' && e.target.id === 'chatInput') {
@@ -328,7 +315,9 @@ class TaskManager {
             }
         }
     }
+    // handleKeydown - Termina Aqui
 
+    // handleSelectionChange - Inicia Aqui
     handleSelectionChange() {
         const selection = window.getSelection();
         if (selection.rangeCount === 0) return;
@@ -338,16 +327,21 @@ class TaskManager {
             this.updateButtonStates(activeElement);
         }
     }
+    // handleSelectionChange - Termina Aqui
 
+    // handleInput - Inicia Aqui
     handleInput(e) {
         // Eliminado: ya no hay conversión automática de URLs
     }
+    // handleInput - Termina Aqui
 
+    // handleBlur - Inicia Aqui
     handleBlur(e) {
         // Eliminado: ya no hay conversión automática de URLs
     }
+    // handleBlur - Termina Aqui
 
-    // === FUNCIONES MARKDOWN ===
+    // handleMarkdownShortcuts - Inicia Aqui
     handleMarkdownShortcuts(e) {
         const { ctrlKey, shiftKey, key } = e;
         
@@ -393,7 +387,9 @@ class TaskManager {
             }
         }
     }
+    // handleMarkdownShortcuts - Termina Aqui
 
+    // applyHtmlFormat - Inicia Aqui
     applyHtmlFormat(element, format) {
         element.focus();
         
@@ -430,7 +426,9 @@ class TaskManager {
         // Actualizar estado de botones después del formato
         this.updateButtonStates(element);
     }
+    // applyHtmlFormat - Termina Aqui
 
+    // wrapSelectionWithElement - Inicia Aqui
     wrapSelectionWithElement(tagName) {
         const selection = window.getSelection();
         if (selection.rangeCount > 0) {
@@ -451,7 +449,9 @@ class TaskManager {
             }
         }
     }
+    // wrapSelectionWithElement - Termina Aqui
 
+    // updateButtonStates - Inicia Aqui
     updateButtonStates(element) {
         const toolbar = element.closest('.markdown-editor').querySelector('.markdown-toolbar');
         if (!toolbar) return;
@@ -493,7 +493,9 @@ class TaskManager {
             }
         });
     }
+    // updateButtonStates - Termina Aqui
 
+    // isSelectionInElement - Inicia Aqui
     isSelectionInElement(tagName) {
         const selection = window.getSelection();
         if (selection.rangeCount === 0) return false;
@@ -507,7 +509,9 @@ class TaskManager {
         }
         return false;
     }
+    // isSelectionInElement - Termina Aqui
 
+    // createLinkFromSelection - Inicia Aqui
     createLinkFromSelection() {
         const selection = window.getSelection();
         if (selection.rangeCount === 0) return;
@@ -533,25 +537,34 @@ class TaskManager {
         // Limpiar selección
         selection.removeAllRanges();
     }
+    // createLinkFromSelection - Termina Aqui
 
-    // === UTILIDADES OPTIMIZADAS ===
+    // getTaskId - Inicia Aqui
     getTaskId(element) {
         const taskItem = element.closest('.task-item');
         return taskItem ? parseInt(taskItem.dataset.taskId) : null;
     }
+    // getTaskId - Termina Aqui
 
+    // getDataIndex - Inicia Aqui
     getDataIndex(element) {
         return parseInt(element.dataset.idx);
     }
+    // getDataIndex - Termina Aqui
 
+    // getFirstProjectId - Inicia Aqui
     getFirstProjectId() {
         return parseInt(Object.keys(this.data[this.currentScenario]?.projects || {})[0]) || 1;
     }
+    // getFirstProjectId - Termina Aqui
 
+    // getCurrentTasks - Inicia Aqui
     getCurrentTasks() {
         return this.data[this.currentScenario]?.projects[this.currentProject]?.tasks || [];
     }
+    // getCurrentTasks - Termina Aqui
 
+    // getAllTasks - Inicia Aqui
     getAllTasks(tasks = null) {
         const searchTasks = tasks || this.getCurrentTasks();
         const result = searchTasks.reduce((all, task) => {
@@ -561,7 +574,9 @@ class TaskManager {
         }, []);
         return result;
     }
+    // getAllTasks - Termina Aqui
 
+    // findTaskById - Inicia Aqui
     findTaskById(taskId, tasks = null) {
         const searchTasks = tasks || this.getCurrentTasks();
         
@@ -572,13 +587,15 @@ class TaskManager {
         }
         return null;
     }
+    // findTaskById - Termina Aqui
 
-    // === GENERACIÓN DE IDS ÚNICOS ===
+    // generateUniqueId - Inicia Aqui
     generateUniqueId() {
         return this.taskIdCounter++;
     }
+    // generateUniqueId - Termina Aqui
 
-    // === GESTIÓN DE TAREAS CORREGIDA ===
+    // addTask - Inicia Aqui
     addTask(parentId = null, text = null) {
         const input = text || document.getElementById('taskInput').value.trim();
         if (!input) return;
@@ -615,13 +632,17 @@ class TaskManager {
         this.saveAndRender();
         return task;
     }
+    // addTask - Termina Aqui
 
+    // calculateDepth - Inicia Aqui
     calculateDepth(parentId) {
         if (!parentId) return 0;
         const parent = this.findTaskById(parentId);
         return parent ? parent.depth + 1 : 0;
     }
+    // calculateDepth - Termina Aqui
 
+    // toggleTaskCompletion - Inicia Aqui
     toggleTaskCompletion(taskId) {
         const task = this.findTaskById(taskId);
         if (task) {
@@ -630,14 +651,18 @@ class TaskManager {
             this.saveAndRender();
         }
     }
+    // toggleTaskCompletion - Termina Aqui
 
+    // updateChildrenCompletion - Inicia Aqui
     updateChildrenCompletion(task, completed) {
         task.children.forEach(child => {
             child.completed = completed;
             this.updateChildrenCompletion(child, completed);
         });
     }
+    // updateChildrenCompletion - Termina Aqui
 
+    // toggleTaskExpansion - Inicia Aqui
     toggleTaskExpansion(taskId) {
         const task = this.findTaskById(taskId);
         if (task?.children.length > 0) {
@@ -645,8 +670,9 @@ class TaskManager {
             this.saveAndRender();
         }
     }
+    // toggleTaskExpansion - Termina Aqui
 
-    // === NUEVA FUNCIONALIDAD: DUPLICAR TAREAS ===
+    // duplicateTask - Inicia Aqui
     duplicateTask(taskId) {
         const originalTask = this.findTaskById(taskId);
         if (!originalTask) return;
@@ -677,7 +703,9 @@ class TaskManager {
             }
         }, 100);
     }
+    // duplicateTask - Termina Aqui
 
+    // createTaskCopy - Inicia Aqui
     createTaskCopy(originalTask) {
         const newId = this.generateUniqueId();
         const copy = {
@@ -701,7 +729,9 @@ class TaskManager {
         
         return copy;
     }
+    // createTaskCopy - Termina Aqui
 
+    // copyChildren - Inicia Aqui
     copyChildren(children) {
         return children.map(child => {
             const childId = this.generateUniqueId();
@@ -722,7 +752,9 @@ class TaskManager {
             };
         });
     }
+    // copyChildren - Termina Aqui
 
+    // updateChildrenParentIds - Inicia Aqui
     updateChildrenParentIds(children, newParentId) {
         children.forEach(child => {
             child.parentId = newParentId;
@@ -731,20 +763,26 @@ class TaskManager {
             }
         });
     }
+    // updateChildrenParentIds - Termina Aqui
 
+    // deleteTask - Inicia Aqui
     deleteTask(taskId) {
         if (confirm('¿Estás seguro de que quieres eliminar esta tarea y todas sus subtareas?')) {
             this.removeTaskById(taskId);
             this.saveAndRender();
         }
     }
+    // deleteTask - Termina Aqui
 
+    // removeTaskById - Inicia Aqui
     removeTaskById(taskId) {
         const currentTasks = this.getCurrentTasks();
         this.data[this.currentScenario].projects[this.currentProject].tasks = 
             this.filterTasks(currentTasks, taskId);
     }
+    // removeTaskById - Termina Aqui
 
+    // filterTasks - Inicia Aqui
     filterTasks(tasks, excludeId) {
         return tasks.filter(task => {
             if (task.id === excludeId) return false;
@@ -752,8 +790,9 @@ class TaskManager {
             return true;
         });
     }
+    // filterTasks - Termina Aqui
 
-    // === FORMULARIOS DE SUBTAREAS ===
+    // addEmptySubtask - Inicia Aqui
     addEmptySubtask(parentId) {
         // Crear subtarea vacía inmediatamente
         const taskId = this.generateUniqueId();
@@ -786,7 +825,9 @@ class TaskManager {
             this.startInlineEdit(taskId);
         }, 100);
     }
+    // addEmptySubtask - Termina Aqui
 
+    // showSubtaskForm - Inicia Aqui
     showSubtaskForm(parentId) {
         const form = document.querySelector(`[data-parent="${parentId}"]`);
         if (form) {
@@ -794,7 +835,9 @@ class TaskManager {
             form.querySelector('.subtask-input').focus();
         }
     }
+    // showSubtaskForm - Termina Aqui
 
+    // addSubtaskFromForm - Inicia Aqui
     addSubtaskFromForm(button) {
         // Evitar doble ejecución
         if (this.isProcessingSubtask) return;
@@ -820,7 +863,9 @@ class TaskManager {
             this.isProcessingSubtask = false;
         }, 100);
     }
+    // addSubtaskFromForm - Termina Aqui
 
+    // hideSubtaskForm - Inicia Aqui
     hideSubtaskForm(button) {
         const form = button.closest('.subtask-form');
         if (form) {
@@ -828,11 +873,10 @@ class TaskManager {
             form.querySelector('.subtask-input').value = '';
         }
     }
+    // hideSubtaskForm - Termina Aqui
 
-    // === DRAG & DROP NATIVO YY-TREE ===
+    // initializeDragAndDrop - Inicia Aqui
     initializeDragAndDrop() {
-        console.log('🎯 Inicializando sistema de drag & drop nativo YY-Tree');
-        
         // Limpiar event listeners previos
         this.cleanupDragAndDrop();
         
@@ -849,7 +893,9 @@ class TaskManager {
             handle.addEventListener('touchstart', this.handleDragStart.bind(this), { passive: false });
         });
     }
+    // initializeDragAndDrop - Termina Aqui
 
+    // cleanupDragAndDrop - Inicia Aqui
     cleanupDragAndDrop() {
         // Limpiar event listeners antiguos
         document.querySelectorAll('.drag-handle').forEach(handle => {
@@ -861,7 +907,9 @@ class TaskManager {
             zone.remove();
         });
     }
+    // cleanupDragAndDrop - Termina Aqui
 
+    // handleDragStart - Inicia Aqui
     handleDragStart(e) {
         e.preventDefault();
         
@@ -872,8 +920,6 @@ class TaskManager {
         const task = this.findTaskById(taskId);
         
         if (!task) return;
-        
-        console.log('🎯 Iniciando drag para tarea:', task.text);
         
         // Crear elemento de preview
         this.createDragPreview(task, e);
@@ -902,7 +948,9 @@ class TaskManager {
         // Crear zonas de drop dinámicas
         this.createDynamicDropZones();
     }
+    // handleDragStart - Termina Aqui
 
+    // createDragPreview - Inicia Aqui
     createDragPreview(task, e) {
         const preview = document.createElement('div');
         preview.className = 'drag-preview';
@@ -922,7 +970,9 @@ class TaskManager {
         document.body.appendChild(preview);
         this.dragPreview = preview;
     }
+    // createDragPreview - Termina Aqui
 
+    // createDynamicDropZones - Inicia Aqui
     createDynamicDropZones() {
         // Crear zonas de drop para cada tarea que no sea la que se está arrastrando
         const allTaskItems = document.querySelectorAll('.task-item');
@@ -942,7 +992,9 @@ class TaskManager {
         // Crear zona para reordenamiento entre tareas del mismo nivel
         this.createReorderDropZones();
     }
+    // createDynamicDropZones - Termina Aqui
 
+    // createTaskDropZone - Inicia Aqui
     createTaskDropZone(taskItem) {
         const taskId = taskItem.dataset.taskId;
         
@@ -970,8 +1022,9 @@ class TaskManager {
         
         this.activateDropZone(dropZone);
     }
+    // createTaskDropZone - Termina Aqui
 
-    // Función helper para insertBefore seguro
+    // safeInsertBefore - Inicia Aqui
     safeInsertBefore(parent, newNode, referenceNode) {
         try {
             // Verificar que el padre y el nodo de referencia existan
@@ -1004,19 +1057,20 @@ class TaskManager {
             parent.insertBefore(newNode, referenceNode);
             return true;
         } catch (error) {
-            console.warn('Error en insertBefore, usando appendChild:', error);
             try {
                 if (parent && newNode && document.contains(parent)) {
                     parent.appendChild(newNode);
                     return true;
                 }
             } catch (appendError) {
-                console.error('Error también en appendChild:', appendError);
+                // Error también en appendChild
             }
             return false;
         }
     }
+    // safeInsertBefore - Termina Aqui
 
+    // createReorderDropZones - Inicia Aqui
     createReorderDropZones() {
         const taskList = document.getElementById('taskList');
         const allTasks = Array.from(taskList.querySelectorAll('.task-item'));
@@ -1053,7 +1107,9 @@ class TaskManager {
             }
         });
     }
-    
+    // createReorderDropZones - Termina Aqui
+
+    // findLastElementOfTask - Inicia Aqui
     findLastElementOfTask(mainTask, allTasks) {
         const mainTaskId = parseInt(mainTask.dataset.taskId);
         const mainTaskIndex = allTasks.indexOf(mainTask);
@@ -1074,7 +1130,9 @@ class TaskManager {
         
         return lastElement;
     }
-    
+    // findLastElementOfTask - Termina Aqui
+
+    // createReorderDropZone - Inicia Aqui
     createReorderDropZone(container, position, referenceTask, referenceId = null) {
         const taskId = referenceId || parseInt(referenceTask.dataset.taskId);
         
@@ -1104,13 +1162,17 @@ class TaskManager {
         
         this.activateDropZone(dropZone);
     }
+    // createReorderDropZone - Termina Aqui
 
+    // activateDropZone - Inicia Aqui
     activateDropZone(dropZone) {
         dropZone.classList.add('active');
         dropZone.style.display = 'block';
         dropZone.style.opacity = '1';
     }
+    // activateDropZone - Termina Aqui
 
+    // handleDragMove - Inicia Aqui
     handleDragMove(e) {
         if (!this.draggingTask || !this.dragPreview) return;
         
@@ -1140,7 +1202,9 @@ class TaskManager {
             dropZone.classList.add('highlighted');
         }
     }
+    // handleDragMove - Termina Aqui
 
+    // handleAutoScroll - Inicia Aqui
     handleAutoScroll(clientY) {
         const scrollThreshold = 50; // Distancia del borde para activar scroll
         const scrollSpeed = 5; // Velocidad de scroll
@@ -1165,11 +1229,11 @@ class TaskManager {
             }, 16); // ~60fps
         }
     }
+    // handleAutoScroll - Termina Aqui
 
+    // handleDragEnd - Inicia Aqui
     handleDragEnd(e) {
         if (!this.draggingTask) return;
-        
-        console.log('🎯 Finalizando drag');
         
         const clientX = e.clientX || e.changedTouches[0].clientX;
         const clientY = e.clientY || e.changedTouches[0].clientY;
@@ -1185,27 +1249,27 @@ class TaskManager {
         // Cleanup
         this.cleanupDragState();
     }
+    // handleDragEnd - Termina Aqui
 
+    // handleDrop - Inicia Aqui
     handleDrop(dropZone) {
         const dropType = dropZone.dataset.dropType;
         const task = this.draggingTask;
         
-        console.log('🎯 Procesando drop:', dropType);
-        
         if (dropType === 'subtask') {
             const newParentId = parseInt(dropZone.dataset.taskId);
             if (newParentId && newParentId !== task.id) {
-                console.log('🎯 Convirtiendo en subtarea de:', newParentId);
                 this.convertToSubtask(task.id, newParentId);
             }
         } else if (dropType === 'reorder') {
             const referenceId = parseInt(dropZone.dataset.referenceId);
             const position = dropZone.dataset.position;
-            console.log('🎯 Reordenando tarea:', position, referenceId);
             this.reorderTask(task.id, referenceId, position);
         }
     }
+    // handleDrop - Termina Aqui
 
+    // reorderTask - Inicia Aqui
     reorderTask(taskId, referenceId, position) {
         const task = this.findTaskById(taskId);
         const referenceTask = this.findTaskById(referenceId);
@@ -1247,15 +1311,14 @@ class TaskManager {
         
         this.saveAndRender();
     }
+    // reorderTask - Termina Aqui
 
+    // convertToSubtask - Inicia Aqui
     convertToSubtask(taskId, newParentId) {
-        console.log(`🎯 Converting task ${taskId} to subtask of ${newParentId}`);
-        
         const task = this.findTaskById(taskId);
         const newParent = this.findTaskById(newParentId);
         
         if (!task || !newParent || task.id === newParentId) {
-            console.error('🚫 Task or parent not found, or trying to make task child of itself');
             return;
         }
 
@@ -1277,7 +1340,9 @@ class TaskManager {
 
         this.saveAndRender();
     }
+    // convertToSubtask - Termina Aqui
 
+    // isDescendant - Inicia Aqui
     isDescendant(potentialDescendant, ancestor) {
         if (!ancestor.children) return false;
         
@@ -1288,7 +1353,9 @@ class TaskManager {
         
         return false;
     }
+    // isDescendant - Termina Aqui
 
+    // cleanupDragState - Inicia Aqui
     cleanupDragState() {
         // Limpiar preview
         if (this.dragPreview) {
@@ -1337,8 +1404,9 @@ class TaskManager {
             zone.remove();
         });
     }
+    // cleanupDragState - Termina Aqui
 
-    // Mantener funciones auxiliares existentes
+    // removeTaskFromParent - Inicia Aqui
     removeTaskFromParent(task) {
         if (task.parentId) {
             const parent = this.findTaskById(task.parentId);
@@ -1353,7 +1421,9 @@ class TaskManager {
             }
         }
     }
+    // removeTaskFromParent - Termina Aqui
 
+    // updateTaskHierarchy - Inicia Aqui
     updateTaskHierarchy(task, newParentId) {
         task.parentId = newParentId;
         task.depth = this.calculateDepth(newParentId);
@@ -1361,7 +1431,9 @@ class TaskManager {
         // Actualizar profundidad de todos los hijos recursivamente
         this.updateChildrenDepth(task);
     }
+    // updateTaskHierarchy - Termina Aqui
 
+    // updateChildrenDepth - Inicia Aqui
     updateChildrenDepth(task) {
         task.children.forEach(child => {
             child.depth = task.depth + 1;
@@ -1369,8 +1441,9 @@ class TaskManager {
             this.updateChildrenDepth(child);
         });
     }
+    // updateChildrenDepth - Termina Aqui
 
-    // === RENDERIZADO OPTIMIZADO ===
+    // render - Inicia Aqui
     render() {
         this.renderTasks();
         this.updateStats();
@@ -1383,7 +1456,9 @@ class TaskManager {
             this.initializeDragAndDrop();
         }, 100);
     }
+    // render - Termina Aqui
 
+    // renderTasks - Inicia Aqui
     renderTasks() {
         const taskList = document.getElementById('taskList');
         const emptyState = document.getElementById('emptyState');
@@ -1401,7 +1476,9 @@ class TaskManager {
             taskList.innerHTML = html;
         }
     }
+    // renderTasks - Termina Aqui
 
+    // getFilteredTasksHierarchical - Inicia Aqui
     getFilteredTasksHierarchical() {
         // Si vista es "all" y no hay filtros de etiquetas ni ordenamiento, mantener jerarquía
         if (this.currentFilter === 'all' && this.activeTagFilters.size === 0 && this.activeSortingFilters.size === 0) {
@@ -1425,11 +1502,15 @@ class TaskManager {
             depth: 0 // Resetear profundidad
         }));
     }
+    // getFilteredTasksHierarchical - Termina Aqui
 
+    // renderTasksHTML - Inicia Aqui
     renderTasksHTML(tasks) {
         return tasks.map(task => this.renderTaskHTML(task)).join('');
     }
+    // renderTasksHTML - Termina Aqui
 
+    // renderTaskHTML - Inicia Aqui
     renderTaskHTML(task) {
         const hasChildren = task.children.length > 0;
         const toggleClass = hasChildren ? (task.expanded ? 'expanded' : 'collapsed') : '';
@@ -1467,7 +1548,9 @@ class TaskManager {
             </li>
         `;
     }
+    // renderTaskHTML - Termina Aqui
 
+    // generateTaskBadges - Inicia Aqui
     generateTaskBadges(task) {
         let badges = '';
         
@@ -1493,7 +1576,9 @@ class TaskManager {
         
         return badges;
     }
+    // generateTaskBadges - Termina Aqui
 
+    // getPriorityBadge - Inicia Aqui
     getPriorityBadge(priority) {
         const priorityConfig = {
             'alta': {
@@ -1514,7 +1599,9 @@ class TaskManager {
             text: 'Media'
         };
     }
+    // getPriorityBadge - Termina Aqui
 
+    // getDateBadges - Inicia Aqui
     getDateBadges(dueDate) {
         const badges = [];
         const dueDateInfo = this.getDueDateInfo(dueDate);
@@ -1541,7 +1628,9 @@ class TaskManager {
         
         return badges;
     }
+    // getDateBadges - Termina Aqui
 
+    // updateStats - Inicia Aqui
     updateStats() {
         const allTasks = this.getAllTasks();
         const completed = allTasks.filter(task => task.completed);
@@ -1551,8 +1640,9 @@ class TaskManager {
         document.getElementById('completedTasks').textContent = completed.length;
         document.getElementById('pendingTasks').textContent = pending.length;
     }
+    // updateStats - Termina Aqui
 
-    // === GESTIÓN DE MODALES UNIFICADA ===
+    // showModal - Inicia Aqui
     showModal(type) {
         const modal = document.getElementById('modal');
         const title = document.getElementById('modal-title');
@@ -1584,12 +1674,16 @@ class TaskManager {
             if (type === 'project') this.renderItemsList('project');
         }
     }
+    // showModal - Termina Aqui
 
+    // hideModal - Inicia Aqui
     hideModal() {
         document.getElementById('modal').style.display = 'none';
         this.editingItemId = null;
     }
+    // hideModal - Termina Aqui
 
+    // getItemModalContent - Inicia Aqui
     getItemModalContent(type) {
         const singular = type === 'scenario' ? 'Escenario' : 'Proyecto';
         const buttonText = type === 'scenario' ? 'Agregar Escenario' : 'Agregar Proyecto';
@@ -1634,7 +1728,9 @@ class TaskManager {
             <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="taskManager.handleImportFile(event, '${type}')">
         `;
     }
+    // getItemModalContent - Termina Aqui
 
+    // renderItemsList - Inicia Aqui
     renderItemsList(type) {
         const list = document.getElementById(`${type}sList`);
         const items = type === 'scenario' 
@@ -1660,8 +1756,9 @@ class TaskManager {
             </div>
         `).join('');
     }
+    // renderItemsList - Termina Aqui
 
-    // === CRUD UNIFICADO ===
+    // showItemForm - Inicia Aqui
     showItemForm(type) {
         const form = document.getElementById('itemForm');
         const title = document.getElementById('form-title');
@@ -1671,20 +1768,26 @@ class TaskManager {
         form.style.display = 'block';
         document.getElementById('item-name').focus();
     }
+    // showItemForm - Termina Aqui
 
+    // hideItemForm - Inicia Aqui
     hideItemForm() {
         const form = document.getElementById('itemForm');
         form.style.display = 'none';
         this.editingItemId = null;
         this.clearItemForm();
     }
+    // hideItemForm - Termina Aqui
 
+    // clearItemForm - Inicia Aqui
     clearItemForm() {
         ['item-name', 'item-icon', 'item-description'].forEach(id => {
             document.getElementById(id).value = '';
         });
     }
+    // clearItemForm - Termina Aqui
 
+    // editItem - Inicia Aqui
     editItem(type, itemId) {
         const item = type === 'scenario' 
             ? this.data[itemId]
@@ -1696,7 +1799,9 @@ class TaskManager {
             this.showItemForm(type);
         }
     }
+    // editItem - Termina Aqui
 
+    // fillItemForm - Inicia Aqui
     fillItemForm(item) {
         document.getElementById('item-name').value = item.name;
         document.getElementById('item-icon').value = item.icon;
@@ -1708,7 +1813,9 @@ class TaskManager {
             detailsElement.innerHTML = item.details;
         }
     }
+    // fillItemForm - Termina Aqui
 
+    // saveItem - Inicia Aqui
     saveItem() {
         const type = document.getElementById('item-type').value;
         const data = {
@@ -1739,7 +1846,9 @@ class TaskManager {
         this.hideItemForm();
         this.saveData();
     }
+    // saveItem - Termina Aqui
 
+    // updateExistingItem - Inicia Aqui
     updateExistingItem(type, data) {
         if (type === 'scenario') {
             Object.assign(this.data[this.editingItemId], data);
@@ -1747,7 +1856,9 @@ class TaskManager {
             Object.assign(this.data[this.currentScenario].projects[this.editingItemId], data);
         }
     }
+    // updateExistingItem - Termina Aqui
 
+    // createNewItem - Inicia Aqui
     createNewItem(type, data) {
         let id;
         
@@ -1775,7 +1886,9 @@ class TaskManager {
             };
         }
     }
+    // createNewItem - Termina Aqui
 
+    // deleteItem - Inicia Aqui
     deleteItem(type, itemId) {
         if (!confirm('¿Estás seguro?')) return;
         
@@ -1790,8 +1903,9 @@ class TaskManager {
         this.render(); // Re-renderizar la vista
         this.saveData();
     }
+    // deleteItem - Termina Aqui
 
-    // === FUNCIONES DE EXPORTAR E IMPORTAR ===
+    // exportItem - Inicia Aqui
     exportItem(type, itemId) {
         let dataToExport;
         let filename;
@@ -1822,15 +1936,17 @@ class TaskManager {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
-        console.log(`📥 ${type} exportado:`, dataToExport);
     }
+    // exportItem - Termina Aqui
 
+    // importItem - Inicia Aqui
     importItem(type) {
         const fileInput = document.getElementById('importFileInput');
         fileInput.click();
     }
+    // importItem - Termina Aqui
 
+    // handleImportFile - Inicia Aqui
     handleImportFile(event, type) {
         const file = event.target.files[0];
         if (!file) return;
@@ -1842,7 +1958,6 @@ class TaskManager {
                 this.processImportedData(importedData, type);
             } catch (error) {
                 alert('Error: El archivo no tiene un formato JSON válido');
-                console.error('Error al importar:', error);
             }
         };
         reader.readAsText(file);
@@ -1850,7 +1965,9 @@ class TaskManager {
         // Limpiar el input para permitir importar el mismo archivo nuevamente
         event.target.value = '';
     }
+    // handleImportFile - Termina Aqui
 
+    // processImportedData - Inicia Aqui
     processImportedData(importedData, type) {
         if (!importedData || typeof importedData !== 'object') {
             alert('Error: Formato de datos inválido');
@@ -1905,7 +2022,9 @@ class TaskManager {
         
         alert(`${type === 'scenario' ? 'Escenario' : 'Proyecto'} importado correctamente`);
     }
+    // processImportedData - Termina Aqui
 
+    // deleteScenario - Inicia Aqui
     deleteScenario(scenarioId) {
         if (scenarioId === 1) return;
         
@@ -1918,7 +2037,9 @@ class TaskManager {
             this.currentProject = 1;
         }
     }
+    // deleteScenario - Termina Aqui
 
+    // deleteProject - Inicia Aqui
     deleteProject(projectId) {
         if (projectId === 1) return;
         
@@ -1937,21 +2058,25 @@ class TaskManager {
             this.currentProject = 1;
         }
     }
+    // deleteProject - Termina Aqui
 
-
-    // === SELECTORES UNIFICADOS ===
+    // updateSelectors - Inicia Aqui
     updateSelectors() {
         this.updateScenarioSelect();
         this.updateProjectSelect();
     }
+    // updateSelectors - Termina Aqui
 
+    // updateScenarioSelect - Inicia Aqui
     updateScenarioSelect() {
         const select = document.getElementById('scenarioSelect');
         select.innerHTML = Object.values(this.data).map(scenario => 
             `<option value="${scenario.id}" ${scenario.id === this.currentScenario ? 'selected' : ''}>${scenario.icon} ${scenario.name}</option>`
         ).join('');
     }
+    // updateScenarioSelect - Termina Aqui
 
+    // updateProjectSelect - Inicia Aqui
     updateProjectSelect() {
         const select = document.getElementById('projectSelect');
         const projects = this.data[this.currentScenario]?.projects || {};
@@ -1959,12 +2084,16 @@ class TaskManager {
             `<option value="${project.id}" ${project.id === this.currentProject ? 'selected' : ''}>${project.icon} ${project.name}</option>`
         ).join('');
     }
+    // updateProjectSelect - Termina Aqui
 
+    // findParentTask - Inicia Aqui
     findParentTask(targetTask) {
         const allTasks = this.getCurrentTasks();
         return this.findParentInTasks(targetTask, allTasks);
     }
+    // findParentTask - Termina Aqui
 
+    // findParentInTasks - Inicia Aqui
     findParentInTasks(targetTask, tasks) {
         for (const task of tasks) {
             if (task.children && task.children.some(child => child.id === targetTask.id)) {
@@ -1977,8 +2106,9 @@ class TaskManager {
         }
         return null;
     }
+    // findParentInTasks - Termina Aqui
 
-    // === EDICIÓN DE TAREAS CORREGIDA ===
+    // showEditTaskModal - Inicia Aqui
     showEditTaskModal(taskId) {
         const task = this.findTaskById(taskId);
         if (!task) return;
@@ -1992,7 +2122,9 @@ class TaskManager {
             if (nameInput) nameInput.focus();
         }, 100);
     }
+    // showEditTaskModal - Termina Aqui
 
+    // getEditTaskModalContent - Inicia Aqui
     getEditTaskModalContent() {
         return `
             <form id="editTaskForm">
@@ -2079,7 +2211,9 @@ class TaskManager {
             </form>
         `;
     }
+    // getEditTaskModalContent - Termina Aqui
 
+    // populateEditForm - Inicia Aqui
     populateEditForm(task) {
         // Poblar campos básicos
         this.setElementValue('edit-task-name', task.text || '');
@@ -2131,8 +2265,9 @@ class TaskManager {
         // Configurar event listeners para sugerencias de etiquetas
         this.setupTagSuggestionListeners();
     }
+    // populateEditForm - Termina Aqui
 
-    // === MANEJO CORREGIDO DE EDICIÓN Y REPETICIÓN ===
+    // handleEditTaskSubmit - Inicia Aqui
     handleEditTaskSubmit() {
         if (!this.editingTaskId) return;
         
@@ -2168,7 +2303,9 @@ class TaskManager {
         this.hideModal();
         this.saveAndRender();
     }
+    // handleEditTaskSubmit - Termina Aqui
 
+    // getEditFormData - Inicia Aqui
     getEditFormData() {
         return {
             name: this.getElementValue('edit-task-name').trim(),
@@ -2181,7 +2318,9 @@ class TaskManager {
             alerts: this.currentTaskAlerts ? [...this.currentTaskAlerts] : [] // Incluir alertas
         };
     }
+    // getEditFormData - Termina Aqui
 
+    // updateTaskWithFormData - Inicia Aqui
     updateTaskWithFormData(task, formData) {
         task.text = formData.name;
         task.priority = formData.priority || 'media';
@@ -2203,8 +2342,9 @@ class TaskManager {
             });
         }
     }
+    // updateTaskWithFormData - Termina Aqui
 
-    // === NUEVA FUNCIÓN: CREAR TAREA PARA REPETICIÓN ===
+    // createTaskForRepetition - Inicia Aqui
     createTaskForRepetition(originalTask, formData) {
         const newId = this.generateUniqueId();
         return {
@@ -2223,8 +2363,9 @@ class TaskManager {
             tags: [...formData.tags] // Crear nueva copia independiente
         };
     }
+    // createTaskForRepetition - Termina Aqui
 
-    // === DUPLICACIÓN CORREGIDA DE HIJOS ===
+    // duplicateChildrenForRepetition - Inicia Aqui
     duplicateChildrenForRepetition(children) {
         return children.map(child => {
             const childId = this.generateUniqueId();
@@ -2245,8 +2386,9 @@ class TaskManager {
             };
         });
     }
+    // duplicateChildrenForRepetition - Termina Aqui
 
-    // === GESTIÓN DE ETIQUETAS SIMPLIFICADA ===
+    // addTagFromInput - Inicia Aqui
     addTagFromInput() {
         const input = document.getElementById('edit-task-tags');
         if (!input) return;
@@ -2266,7 +2408,9 @@ class TaskManager {
             if (suggestions) suggestions.classList.remove('show');
         }
     }
+    // addTagFromInput - Termina Aqui
 
+    // renderEditingTags - Inicia Aqui
     renderEditingTags() {
         const container = document.getElementById('selected-tags-container');
         if (!container) return;
@@ -2282,13 +2426,16 @@ class TaskManager {
             `;
         }).join('');
     }
+    // renderEditingTags - Termina Aqui
 
+    // removeEditingTag - Inicia Aqui
     removeEditingTag(tag) {
         this.editingTags = this.editingTags.filter(t => (typeof t === 'string' ? t : t.text) !== tag);
         this.renderEditingTags();
     }
+    // removeEditingTag - Termina Aqui
 
-    // === SUGERENCIAS DE ETIQUETAS ===
+    // getAllExistingTags - Inicia Aqui
     getAllExistingTags() {
         const tags = new Set();
         const allTasks = this.getAllTasks();
@@ -2302,7 +2449,9 @@ class TaskManager {
         });
         return Array.from(tags).sort();
     }
+    // getAllExistingTags - Termina Aqui
 
+    // showTagSuggestions - Inicia Aqui
     showTagSuggestions() {
         const input = document.getElementById('edit-task-tags');
         const suggestionsElement = document.getElementById('editTagsSuggestions');
@@ -2343,7 +2492,9 @@ class TaskManager {
         
         suggestionsElement.classList.add('show');
     }
+    // showTagSuggestions - Termina Aqui
 
+    // selectTagSuggestion - Inicia Aqui
     selectTagSuggestion(tag) {
         if (!this.editingTags.includes(tag)) {
             this.editingTags.push(tag);
@@ -2355,7 +2506,9 @@ class TaskManager {
         if (input) input.value = '';
         if (suggestions) suggestions.classList.remove('show');
     }
+    // selectTagSuggestion - Termina Aqui
 
+    // hideTagSuggestions - Inicia Aqui
     hideTagSuggestions() {
         const suggestionsElement = document.getElementById('editTagsSuggestions');
         if (!suggestionsElement) return;
@@ -2364,7 +2517,9 @@ class TaskManager {
             suggestionsElement.classList.remove('show');
         }, 200);
     }
+    // hideTagSuggestions - Termina Aqui
 
+    // setupTagSuggestionListeners - Inicia Aqui
     setupTagSuggestionListeners() {
         const input = document.getElementById('edit-task-tags');
         if (!input) return;
@@ -2391,8 +2546,9 @@ class TaskManager {
             }
         });
     }
+    // setupTagSuggestionListeners - Termina Aqui
 
-    // === FECHAS RÁPIDAS ===
+    // setQuickDate - Inicia Aqui
     setQuickDate(button) {
         const target = button.dataset.target;
         const dateInput = document.getElementById(target);
@@ -2423,8 +2579,9 @@ class TaskManager {
         
         dateInput.value = `${year}-${month}-${day}T${hour}:${minute}`;
     }
+    // setQuickDate - Termina Aqui
 
-    // === ALERTAS RÁPIDAS ===
+    // setQuickAlert - Inicia Aqui
     setQuickAlert(button) {
         const minutes = parseInt(button.dataset.minutes);
         
@@ -2475,8 +2632,9 @@ class TaskManager {
         
         dateInput.value = `${year}-${month}-${day}T${hour}:${minute}`;
     }
+    // setQuickAlert - Termina Aqui
 
-    // === CÁLCULOS DE TIEMPO ===
+    // getDaysRemainingBadge - Inicia Aqui
     getDaysRemainingBadge(daysRemaining, dueDate = null) {
         if (daysRemaining === null) return null;
         
@@ -2523,7 +2681,9 @@ class TaskManager {
         
         return { text, className };
     }
+    // getDaysRemainingBadge - Termina Aqui
 
+    // getTimeRemainingInfo - Inicia Aqui
     getTimeRemainingInfo(dueDate) {
         if (!dueDate) return null;
         
@@ -2556,7 +2716,9 @@ class TaskManager {
         
         return null;
     }
+    // getTimeRemainingInfo - Termina Aqui
 
+    // calculateDaysRemaining - Inicia Aqui
     calculateDaysRemaining(dueDate) {
         if (!dueDate) return null;
         
@@ -2573,7 +2735,9 @@ class TaskManager {
         
         return daysDiff;
     }
+    // calculateDaysRemaining - Termina Aqui
 
+    // getDueDateInfo - Inicia Aqui
     getDueDateInfo(dueDate) {
         if (!dueDate) return null;
         
@@ -2605,8 +2769,9 @@ class TaskManager {
             };
         }
     }
+    // getDueDateInfo - Termina Aqui
 
-    // === REPETICIÓN DE TAREAS CORREGIDA ===
+    // createRepeatedTasks - Inicia Aqui
     createRepeatedTasks(originalTask, repeatType, repeatCount) {
         const createdTasks = [];
         const baseDate = new Date(originalTask.dueDate);
@@ -2659,8 +2824,9 @@ class TaskManager {
         
         return createdTasks;
     }
+    // createRepeatedTasks - Termina Aqui
 
-    // === NUEVA FUNCIÓN: AJUSTAR PARENT IDS ===
+    // adjustChildrenParentIds - Inicia Aqui
     adjustChildrenParentIds(children, newParentId) {
         children.forEach(child => {
             child.parentId = newParentId;
@@ -2669,8 +2835,9 @@ class TaskManager {
             }
         });
     }
+    // adjustChildrenParentIds - Termina Aqui
 
-    // === PERSISTENCIA ===
+    // saveData - Inicia Aqui
     saveData() {
         try {
             const saveData = {
@@ -2686,10 +2853,12 @@ class TaskManager {
             };
             localStorage.setItem('taskTreeData', JSON.stringify(saveData));
         } catch (error) {
-            console.error('Error al guardar datos:', error);
+            // Error al guardar datos
         }
     }
+    // saveData - Termina Aqui
 
+    // loadData - Inicia Aqui
     loadData() {
         try {
             const savedData = localStorage.getItem('taskTreeData');
@@ -2710,14 +2879,13 @@ class TaskManager {
                 this.rescheduleAllAlerts();
             }
         } catch (error) {
-            console.error('Error al cargar datos:', error);
+            // Error al cargar datos
         }
     }
+    // loadData - Termina Aqui
 
-    // === REPROGRAMAR ALERTAS ===
+    // rescheduleAllAlerts - Inicia Aqui
     rescheduleAllAlerts() {
-        console.log('🔄 Reprogramando todas las alertas después de cargar datos...');
-        
         // Limpiar timeouts e intervalos existentes
         if (this.alertTimeouts) {
             Object.values(this.alertTimeouts).forEach(timeout => clearTimeout(timeout));
@@ -2739,10 +2907,10 @@ class TaskManager {
                 });
             }
         });
-        
-        console.log('✅ Todas las alertas han sido reprogramadas');
     }
+    // rescheduleAllAlerts - Termina Aqui
     
+    // rescheduleTaskAlerts - Inicia Aqui
     rescheduleTaskAlerts(tasks) {
         tasks.forEach(task => {
             // Reprogramar alertas de esta tarea
@@ -2752,10 +2920,7 @@ class TaskManager {
                         const alertDate = new Date(alertObj.alertDate);
                         const now = new Date();
                         if (alertDate > now) {
-                            console.log(`⏰ Reprogramando alerta: "${alertObj.title}" para ${alertDate.toLocaleString()}`);
                             this.scheduleAlert(alertObj);
-                        } else {
-                            console.log(`⚠️ Alerta vencida omitida: "${alertObj.title}"`);
                         }
                     }
                 });
@@ -2767,8 +2932,9 @@ class TaskManager {
             }
         });
     }
+    // rescheduleTaskAlerts - Termina Aqui
 
-    // === FILTROS ===
+    // applyFilter - Inicia Aqui
     applyFilter(filterType) {
         this.currentFilter = filterType;
         
@@ -2783,7 +2949,9 @@ class TaskManager {
         
         this.render();
     }
+    // applyFilter - Termina Aqui
 
+    // toggleSort - Inicia Aqui
     toggleSort(sortType) {
         // Toggle del filtro de ordenamiento
         if (this.activeSortingFilters.has(sortType)) {
@@ -2796,8 +2964,9 @@ class TaskManager {
         
         this.render();
     }
+    // toggleSort - Termina Aqui
 
-    // === FUNCIONALIDAD DE EXPANDIR/CONTRAER TODAS LAS TAREAS ===
+    // toggleAllTasks - Inicia Aqui
     toggleAllTasks() {
         this.allTasksCollapsed = !this.allTasksCollapsed;
         
@@ -2815,12 +2984,16 @@ class TaskManager {
         // Re-renderizar
         this.saveAndRender();
     }
+    // toggleAllTasks - Termina Aqui
 
+    // getAllTasksWithChildren - Inicia Aqui
     getAllTasksWithChildren() {
         const allTasks = this.getAllTasks();
         return allTasks.filter(task => task.children && task.children.length > 0);
     }
+    // getAllTasksWithChildren - Termina Aqui
 
+    // updateExpandCollapseControlVisibility - Inicia Aqui
     updateExpandCollapseControlVisibility() {
         const expandCollapseControl = document.getElementById('expandCollapseControl');
         
@@ -2837,7 +3010,9 @@ class TaskManager {
             expandCollapseControl.style.display = 'none';
         }
     }
+    // updateExpandCollapseControlVisibility - Termina Aqui
 
+    // updateExpandCollapseButtonText - Inicia Aqui
     updateExpandCollapseButtonText() {
         const btn = document.getElementById('expandCollapseBtn');
         if (!btn) return;
@@ -2854,7 +3029,9 @@ class TaskManager {
         // Sincronizar el estado interno con el real
         this.allTasksCollapsed = actualState;
     }
+    // updateExpandCollapseButtonText - Termina Aqui
 
+    // detectActualCollapseState - Inicia Aqui
     detectActualCollapseState() {
         const tasksWithChildren = this.getAllTasksWithChildren();
         if (tasksWithChildren.length === 0) return false;
@@ -2863,8 +3040,9 @@ class TaskManager {
         const allCollapsed = tasksWithChildren.every(task => !task.expanded);
         return allCollapsed;
     }
+    // detectActualCollapseState - Termina Aqui
 
-    // === FUNCIONALIDAD DE SELECCIÓN MÚLTIPLE ===
+    // toggleTaskSelection - Inicia Aqui
     toggleTaskSelection(taskId) {
         if (this.selectedTasks.has(taskId)) {
             this.selectedTasks.delete(taskId);
@@ -2874,7 +3052,9 @@ class TaskManager {
         }
         this.updateMultiSelectUI();
     }
+    // toggleTaskSelection - Termina Aqui
 
+    // selectTaskRange - Inicia Aqui
     selectTaskRange(startTaskId, endTaskId) {
         // Obtener todas las tareas visibles en orden
         const visibleTasks = this.getVisibleTasksInOrder();
@@ -2894,7 +3074,9 @@ class TaskManager {
         this.lastSelectedTaskId = endTaskId;
         this.updateMultiSelectUI();
     }
+    // selectTaskRange - Termina Aqui
 
+    // getVisibleTasksInOrder - Inicia Aqui
     getVisibleTasksInOrder() {
         if (this.currentFilter === 'all') {
             return this.getAllTasks();
@@ -2902,13 +3084,17 @@ class TaskManager {
             return this.getFilteredTasks();
         }
     }
+    // getVisibleTasksInOrder - Termina Aqui
 
+    // clearSelection - Inicia Aqui
     clearSelection() {
         this.selectedTasks.clear();
         this.lastSelectedTaskId = null;
         this.updateMultiSelectUI();
     }
+    // clearSelection - Termina Aqui
 
+    // updateMultiSelectUI - Inicia Aqui
     updateMultiSelectUI() {
         const multiSelectBar = document.getElementById('multiSelectBar');
         const selectedCount = document.getElementById('selectedCount');
@@ -2923,7 +3109,9 @@ class TaskManager {
         // Actualizar clases CSS de las tareas
         this.updateTaskSelectionStyles();
     }
+    // updateMultiSelectUI - Termina Aqui
 
+    // updateTaskSelectionStyles - Inicia Aqui
     updateTaskSelectionStyles() {
         document.querySelectorAll('.task-item').forEach(taskItem => {
             const taskId = parseInt(taskItem.dataset.taskId);
@@ -2934,8 +3122,9 @@ class TaskManager {
             }
         });
     }
+    // updateTaskSelectionStyles - Termina Aqui
 
-    // === ACCIONES EN LOTE ===
+    // bulkComplete - Inicia Aqui
     bulkComplete() {
         if (this.selectedTasks.size === 0) return;
         
@@ -2951,7 +3140,9 @@ class TaskManager {
         this.clearSelection();
         this.saveAndRender();
     }
+    // bulkComplete - Termina Aqui
 
+    // bulkDuplicate - Inicia Aqui
     bulkDuplicate() {
         if (this.selectedTasks.size === 0) return;
         
@@ -2979,7 +3170,9 @@ class TaskManager {
         this.clearSelection();
         this.saveAndRender();
     }
+    // bulkDuplicate - Termina Aqui
 
+    // bulkDelete - Inicia Aqui
     bulkDelete() {
         if (this.selectedTasks.size === 0) return;
         
@@ -2996,8 +3189,9 @@ class TaskManager {
         this.clearSelection();
         this.saveAndRender();
     }
+    // bulkDelete - Termina Aqui
 
-    // === EDICIÓN INLINE ===
+    // startInlineEdit - Inicia Aqui
     startInlineEdit(taskId) {
         // Si ya hay una tarea siendo editada, terminar esa edición primero
         if (this.currentlyEditingTaskId) {
@@ -3035,7 +3229,9 @@ class TaskManager {
         input.addEventListener('blur', () => this.endInlineEdit(true));
         input.addEventListener('keydown', (e) => this.handleInlineEditKeydown(e));
     }
+    // startInlineEdit - Termina Aqui
     
+    // handleInlineEditKeydown - Inicia Aqui
     handleInlineEditKeydown(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -3045,50 +3241,70 @@ class TaskManager {
             this.endInlineEdit(false);
         }
     }
+    // handleInlineEditKeydown - Termina Aqui
     
-    endInlineEdit(save) {
-        if (!this.currentlyEditingTaskId) return;
-        
-        const taskElement = document.querySelector(`[data-task-id="${this.currentlyEditingTaskId}"]`);
-        if (!taskElement) {
-            this.currentlyEditingTaskId = null;
-            return;
-        }
-        
-        const input = taskElement.querySelector('.inline-edit-input');
-        const taskText = taskElement.querySelector('.task-text');
-        
-        if (!input || !taskText) {
-            this.currentlyEditingTaskId = null;
-            return;
-        }
-        
-        if (save) {
-            const newText = input.value.trim();
-            if (newText && newText !== input.dataset.originalText) {
-                const task = this.findTaskById(this.currentlyEditingTaskId);
-                if (task) {
-                    task.text = newText;
-                    this.saveData();
-                }
-            } else if (!newText) {
-                // Si el texto está vacío, restaurar el texto original
-                input.value = input.dataset.originalText;
-            }
-        }
-        
-        // Limpiar la edición
-        input.remove();
-        taskText.style.display = '';
-        taskText.classList.remove('editing');
+    // endInlineEdit - Inicia Aqui
+endInlineEdit(save) {
+    if (!this.currentlyEditingTaskId) return;
+    
+    const taskElement = document.querySelector(`[data-task-id="${this.currentlyEditingTaskId}"]`);
+    if (!taskElement) {
         this.currentlyEditingTaskId = null;
-        
-        // Re-renderizar solo si se guardó un cambio
-        if (save && input.value.trim() && input.value.trim() !== input.dataset.originalText) {
-            this.render();
+        return;
+    }
+    
+    const input = taskElement.querySelector('.inline-edit-input');
+    const taskText = taskElement.querySelector('.task-text');
+    
+    if (!input || !taskText) {
+        this.currentlyEditingTaskId = null;
+        return;
+    }
+    
+    if (save) {
+        const newText = input.value.trim();
+        if (newText && newText !== input.dataset.originalText) {
+            const task = this.findTaskById(this.currentlyEditingTaskId);
+            if (task) {
+                task.text = newText;
+                this.saveData();
+            }
+        } else if (!newText) {
+            // Si el texto está vacío, restaurar el texto original
+            input.value = input.dataset.originalText;
         }
     }
+    
+    // Verificar que el input aún esté conectado al DOM antes de removerlo
+    if (input && input.parentNode && document.contains(input)) {
+        try {
+            input.remove();
+        } catch (error) {
+            // Si falla el remove, intentar con removeChild
+            try {
+                input.parentNode.removeChild(input);
+            } catch (removeError) {
+                // Si también falla removeChild, continuar sin remover
+            }
+        }
+    }
+    
+    // Restaurar el texto de la tarea
+    if (taskText) {
+        taskText.style.display = '';
+        taskText.classList.remove('editing');
+    }
+    
+    this.currentlyEditingTaskId = null;
+    
+    // Re-renderizar solo si se guardó un cambio
+    if (save && input.value && input.value.trim() && input.value.trim() !== input.dataset.originalText) {
+        this.render();
+    }
+}
+// endInlineEdit - Termina Aqui
 
+    // toggleTagFilter - Inicia Aqui
     toggleTagFilter(tag) {
         if (this.activeTagFilters.has(tag)) {
             this.activeTagFilters.delete(tag);
@@ -3104,7 +3320,9 @@ class TaskManager {
         
         this.render();
     }
+    // toggleTagFilter - Termina Aqui
 
+    // updateFilterTags - Inicia Aqui
     updateFilterTags() {
         const filterTagsContainer = document.getElementById('filterTags');
         if (!filterTagsContainer) return;
@@ -3131,7 +3349,9 @@ class TaskManager {
                    onclick="taskManager.toggleTagFilter('${tag}')">${tag}</span>`
         ).join('');
     }
+    // updateFilterTags - Termina Aqui
 
+    // getFilteredTasks - Inicia Aqui
     getFilteredTasks() {
         let tasks = this.getAllTasks();
         
@@ -3200,7 +3420,9 @@ class TaskManager {
 
         return tasks;
     }
+    // getFilteredTasks - Termina Aqui
 
+    // sortTasks - Inicia Aqui
     sortTasks(tasks, sortingFilters) {
         return tasks.sort((a, b) => {
             const sortArray = Array.from(sortingFilters);
@@ -3275,13 +3497,16 @@ class TaskManager {
             return 0;
         });
     }
+    // sortTasks - Termina Aqui
 
-    // === UTILIDADES ===
+    // saveAndRender - Inicia Aqui
     saveAndRender() {
         this.saveData();
         this.render();
     }
+    // saveAndRender - Termina Aqui
 
+    // escapeHtml - Inicia Aqui
     escapeHtml(str) {
         if (str === null || str === undefined) return '';
         return String(str)
@@ -3291,8 +3516,9 @@ class TaskManager {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
+    // escapeHtml - Termina Aqui
 
-    // === UTILIDADES DE DOM SIMPLIFICADAS ===
+    // getElementValue - Inicia Aqui
     getElementValue(id) {
         const element = document.getElementById(id);
         if (!element) return '';
@@ -3304,7 +3530,9 @@ class TaskManager {
         
         return element.value || '';
     }
+    // getElementValue - Termina Aqui
 
+    // setElementValue - Inicia Aqui
     setElementValue(id, value) {
         const element = document.getElementById(id);
         if (!element) return;
@@ -3322,8 +3550,9 @@ class TaskManager {
             element.value = value;
         }
     }
+    // setElementValue - Termina Aqui
 
-    // === GESTIÓN DE ALERTAS ===
+    // addAlert - Inicia Aqui
     addAlert() {
         const titleInput = document.getElementById('alertTitleInput');
         const messageInput = document.getElementById('alertMessageInput');
@@ -3381,7 +3610,9 @@ class TaskManager {
         
         alert(`✅ Alerta "${title}" programada para ${new Date(alertDate).toLocaleString()}`);
     }
+    // addAlert - Termina Aqui
 
+    // addAlertToList - Inicia Aqui
     addAlertToList(alertObj) {
         const alertsList = document.getElementById('modalAlertsList');
         if (!alertsList) return;
@@ -3431,7 +3662,9 @@ class TaskManager {
         
         alertsList.appendChild(alertElement);
     }
+    // addAlertToList - Termina Aqui
 
+    // removeAlert - Inicia Aqui
     removeAlert(alertId) {
         const alertElement = document.querySelector(`[data-alert-id="${alertId}"]`);
         if (alertElement) {
@@ -3457,7 +3690,9 @@ class TaskManager {
         
         alert('🗑️ Alerta eliminada');
     }
+    // removeAlert - Termina Aqui
 
+    // editAlert - Inicia Aqui
     editAlert(alertId) {
         const alertObj = this.currentTaskAlerts?.find(a => a.id === alertId);
         if (!alertObj) return;
@@ -3498,7 +3733,9 @@ class TaskManager {
         
         alert(`✅ Fecha de alerta actualizada a ${alertDateTime.toLocaleString()}`);
     }
+    // editAlert - Termina Aqui
 
+    // toggleAlert - Inicia Aqui
     toggleAlert(alertId) {
         const alertObj = this.currentTaskAlerts?.find(a => a.id === alertId);
         if (!alertObj) return;
@@ -3525,7 +3762,9 @@ class TaskManager {
         // Actualizar UI
         this.updateAlertInList(alertObj);
     }
+    // toggleAlert - Termina Aqui
 
+    // duplicateAlert - Inicia Aqui
     duplicateAlert(alertId) {
         const originalAlert = this.currentTaskAlerts?.find(a => a.id === alertId);
         if (!originalAlert) return;
@@ -3556,7 +3795,9 @@ class TaskManager {
         
         alert(`📋 Alerta duplicada: "${duplicatedAlert.title}"`);
     }
+    // duplicateAlert - Termina Aqui
 
+    // updateAlertInList - Inicia Aqui
     updateAlertInList(alertObj) {
         const alertElement = document.querySelector(`[data-alert-id="${alertObj.id}"]`);
         if (!alertElement) return;
@@ -3565,7 +3806,9 @@ class TaskManager {
         alertElement.remove();
         this.addAlertToList(alertObj);
     }
+    // updateAlertInList - Termina Aqui
 
+    // scheduleAlert - Inicia Aqui
     scheduleAlert(alertObj) {
         if (!this.alertTimeouts) {
             this.alertTimeouts = {};
@@ -3573,7 +3816,6 @@ class TaskManager {
         
         // Cancelar timeout existente si ya existe para esta alerta
         if (this.alertTimeouts[alertObj.id]) {
-            console.log('🧹 Cancelando timeout existente para:', alertObj.title);
             clearTimeout(this.alertTimeouts[alertObj.id]);
             delete this.alertTimeouts[alertObj.id];
         }
@@ -3583,11 +3825,8 @@ class TaskManager {
         const timeUntilAlert = alertDate.getTime() - now.getTime();
         
         if (timeUntilAlert <= 0) {
-            console.log('⚠️ Alerta ya vencida:', alertObj.title);
             return;
         }
-        
-        console.log(`⏰ Programando alerta "${alertObj.title}" en ${timeUntilAlert}ms`);
         
         this.alertTimeouts[alertObj.id] = setTimeout(() => {
             this.triggerAlert(alertObj);
@@ -3597,10 +3836,10 @@ class TaskManager {
         // Actualizar countdown cada segundo
         this.updateCountdown(alertObj.id, alertDate);
     }
+    // scheduleAlert - Termina Aqui
 
+    // triggerAlert - Inicia Aqui
     async triggerAlert(alertObj) {
-        console.log('🔔 Disparando alerta:', alertObj.title);
-        
         try {
             // Verificar permisos de notificación
             let permission = Notification.permission;
@@ -3609,18 +3848,13 @@ class TaskManager {
             }
             
             if (permission === 'denied') {
-                console.warn('Permisos de notificación denegados. Permission:', permission);
                 // Mostrar alerta en página como fallback
                 alert(`🔔 ${alertObj.title}: ${alertObj.message}`);
                 return;
             }
             
-            console.log('✅ Permisos de notificación otorgados');
-            
             // Usar service worker para notificaciones push si está disponible
             if (this.swRegistration) {
-                console.log('🔔 Mostrando notificación via service worker:', alertObj.title);
-                
                 await this.swRegistration.showNotification(alertObj.title, {
                     body: alertObj.message,
                     icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12,6 12,12 16,14"></polyline></svg>',
@@ -3640,21 +3874,17 @@ class TaskManager {
                     }
                 });
                 
-                console.log('✅ Notificación push mostrada exitosamente');
                 return; // Evitar mostrar notificación duplicada
                 
             } else {
-                console.log('⚠️ Service Worker no disponible, usando notificación simple');
                 // Fallback a notificación simple
                 new Notification(alertObj.title, {
                     body: alertObj.message,
                     icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"%3E%3Ccircle cx="12" cy="12" r="10"%3E%3C/circle%3E%3Cpolyline points="12,6 12,12 16,14"%3E%3C/polyline%3E%3C/svg%3E'
                 });
-                console.log('✅ Notificación simple mostrada');
             }
             
         } catch (error) {
-            console.error('❌ Error mostrando notificación:', error);
             // Fallback final a alerta del navegador
             alert(`🔔 ${alertObj.title}: ${alertObj.message}`);
         }
@@ -3668,7 +3898,9 @@ class TaskManager {
         alertObj.active = false;
         this.updateAlertInList(alertObj);
     }
+    // triggerAlert - Termina Aqui
 
+    // sendWebhook - Inicia Aqui
     sendWebhook(alertObj) {
         const payload = {
             title: alertObj.title,
@@ -3684,12 +3916,14 @@ class TaskManager {
             },
             body: JSON.stringify(payload)
         }).then(response => {
-            console.log('✅ Webhook enviado:', response.status);
+            // Webhook enviado
         }).catch(error => {
-            console.error('❌ Error enviando webhook:', error);
+            // Error enviando webhook
         });
     }
+    // sendWebhook - Termina Aqui
 
+    // getTimeRemaining - Inicia Aqui
     getTimeRemaining(alertDate) {
         const now = new Date();
         const diff = alertDate.getTime() - now.getTime();
@@ -3704,7 +3938,9 @@ class TaskManager {
         if (hours > 0) return `⏱️ ${hours}h ${minutes}m`;
         return `⏱️ ${minutes}m`;
     }
+    // getTimeRemaining - Termina Aqui
 
+    // loadTaskAlerts - Inicia Aqui
     loadTaskAlerts(alerts) {
         const alertsList = document.getElementById('modalAlertsList');
         if (!alertsList) return;
@@ -3737,8 +3973,9 @@ class TaskManager {
             });
         }
     }
+    // loadTaskAlerts - Termina Aqui
 
-    // === ACTUALIZACIÓN DE COUNTDOWN EN TIEMPO REAL ===
+    // updateCountdown - Inicia Aqui
     updateCountdown(alertId, alertDate) {
         const countdownElement = document.getElementById(`countdown-${alertId}`);
         if (!countdownElement) return;
@@ -3788,17 +4025,18 @@ class TaskManager {
         // Guardar referencia del intervalo
         this.countdownIntervals[alertId] = updateInterval;
     }
+    // updateCountdown - Termina Aqui
 
-    // === ACTUALIZACIÓN DE BADGES EN TIEMPO REAL ===
+    // startTimeBadgeUpdater - Inicia Aqui
     startTimeBadgeUpdater() {
         // Actualizar badges cada minuto
         this.timeBadgeInterval = setInterval(() => {
             this.updateTimeBadges();
         }, 60000); // 60 segundos
-        
-        console.log('⏰ Iniciado actualizador de badges de tiempo (cada 60 segundos)');
     }
+    // startTimeBadgeUpdater - Termina Aqui
     
+    // updateTimeBadges - Inicia Aqui
     updateTimeBadges() {
         const taskElements = document.querySelectorAll('.task-item[data-task-id]');
         let updatedCount = 0;
@@ -3822,13 +4060,10 @@ class TaskManager {
                 }
             }
         });
-        
-        if (updatedCount > 0) {
-            console.log(`⏰ Actualizados ${updatedCount} badges`);
-        }
     }
+    // updateTimeBadges - Termina Aqui
     
-    // Limpiar intervalos al destruir
+    // destroy - Inicia Aqui
     destroy() {
         if (this.timeBadgeInterval) {
             clearInterval(this.timeBadgeInterval);
@@ -3842,18 +4077,16 @@ class TaskManager {
             Object.values(this.countdownIntervals).forEach(interval => clearInterval(interval));
         }
     }
+    // destroy - Termina Aqui
 
-    // === REGISTRO DE SERVICE WORKER ===
+    // registerServiceWorker - Inicia Aqui
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                console.log('🔧 Registrando service worker...');
-                
                 // Limpiar service workers anteriores
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 for (let registration of registrations) {
                     await registration.unregister();
-                    console.log('🧹 Service worker anterior desregistrado');
                 }
                 
                 // Registrar nuevo service worker
@@ -3861,49 +4094,25 @@ class TaskManager {
                     scope: './'
                 });
                 
-                console.log('✅ Service worker registrado:', registration);
                 await navigator.serviceWorker.ready;
                 
                 this.swRegistration = registration;
-                console.log('✅ Service worker listo para notificaciones');
                 
             } catch (error) {
-                console.error('❌ Error registrando service worker:', error);
+                // Error registrando service worker
             }
-        } else {
-            console.log('⚠️ Service Worker no disponible en este navegador');
         }
     }
+    // registerServiceWorker - Termina Aqui
 
-    // ===== MÉTODOS DEL ASISTENTE IA =====
-    
-    // ===== ASSISTANT CONTEXT MANAGEMENT =====
-    updateAssistantContext() {
-        // Siempre usar módulo Tareas con el contexto actual seleccionado
-        // El módulo General queda para acceso manual cuando el usuario lo desee
-        this.selectModule('tasks');
-    }
-    
-    updateContextDisplay() {
-        // Actualizar el display del contexto actual
-        const currentScenarioSpan = document.getElementById('current-scenario');
-        const currentProjectSpan = document.getElementById('current-project');
-        
-        if (currentScenarioSpan && currentProjectSpan) {
-            const scenarioName = this.data[this.currentScenario]?.name || 'Por defecto';
-            const projectName = this.data[this.currentScenario]?.projects[this.currentProject]?.name || 'Sin proyecto';
-            
-            currentScenarioSpan.textContent = scenarioName;
-            currentProjectSpan.textContent = projectName;
-        }
-    }
-
+    // initAssistant - Inicia Aqui
     initAssistant() {
         this.loadAssistantData();
         this.setupAssistantEventListeners();
-        this.updateAssistantContext();
     }
+    // initAssistant - Termina Aqui
     
+    // loadAssistantData - Inicia Aqui
     loadAssistantData() {
         try {
             const savedConfig = localStorage.getItem('taskTreeAIConfig');
@@ -3927,14 +4136,18 @@ class TaskManager {
                 this.promptContexts = { ...this.promptContexts, ...JSON.parse(savedPrompts) };
             }
         } catch (error) {
-            console.error('Error cargando datos del asistente:', error);
+            // Error cargando datos del asistente
         }
     }
+    // loadAssistantData - Termina Aqui
     
+    // setupAssistantEventListeners - Inicia Aqui
     setupAssistantEventListeners() {
         // Los eventos ya están manejados en handleClick y handleKeydown
     }
+    // setupAssistantEventListeners - Termina Aqui
     
+    // toggleAssistant - Inicia Aqui
     toggleAssistant() {
         this.assistantVisible = !this.assistantVisible;
         const content = document.getElementById('assistantContent');
@@ -3943,169 +4156,14 @@ class TaskManager {
         if (this.assistantVisible) {
             content.style.display = 'block';
             toggleBtn.textContent = 'Ocultar';
-            this.updateAssistantContext();
-            // Cargar proyectos inicialmente si ya hay escenarios seleccionados
-            this.loadAssistantProjects();
         } else {
             content.style.display = 'none';
             toggleBtn.textContent = 'Mostrar';
         }
     }
+    // toggleAssistant - Termina Aqui
     
-    selectModule(module) {
-        this.currentModule = module;
-        
-        // Actualizar UI
-        document.querySelectorAll('.module-option').forEach(option => {
-            option.classList.toggle('active', option.dataset.module === module);
-        });
-        
-        // Mostrar/ocultar display de contexto
-        const contextDisplay = document.getElementById('context-display');
-        if (contextDisplay) {
-            contextDisplay.style.display = module === 'tasks' ? 'block' : 'none';
-        }
-        
-        // Actualizar el display del contexto actual
-        if (module === 'tasks') {
-            this.updateContextDisplay();
-        }
-    }
-    
-    loadAssistantContext() {
-        if (this.currentModule === 'tasks') {
-            this.loadAssistantScenarios();
-            this.loadAssistantProjects();
-        }
-    }
-    
-    loadAssistantScenarios() {
-        const scenariosButtons = document.getElementById('scenarios-buttons');
-        if (!scenariosButtons) return;
-        
-        // Usar el mismo patrón que updateFilterTags
-        const scenarios = Object.values(this.data).filter(scenario => scenario.id);
-        
-        if (scenarios.length === 0) {
-            scenariosButtons.innerHTML = '<span class="no-tags-message">No hay escenarios disponibles</span>';
-            return;
-        }
-        
-        scenariosButtons.innerHTML = scenarios.map(scenario => 
-            `<span class="filter-tag ${this.selectedScenarios.has(scenario.id.toString()) ? 'active' : ''}" 
-                   data-scenario="${scenario.id}" 
-                   onclick="taskManager.toggleScenarioFilter('${scenario.id}')">${scenario.icon} ${scenario.name}</span>`
-        ).join('');
-        
-        console.log('Escenarios cargados:', scenarios.map(s => s.id));
-    }
-    
-    loadAssistantProjects() {
-        const projectsButtons = document.getElementById('projects-buttons');
-        if (!projectsButtons) return;
-        
-        // Si no hay escenarios seleccionados, no mostrar proyectos
-        if (this.selectedScenarios.size === 0) {
-            projectsButtons.innerHTML = '<span class="no-tags-message">Selecciona un escenario primero</span>';
-            return;
-        }
-        
-        // Obtener proyectos de los escenarios seleccionados
-        const projectsMap = new Map();
-        this.selectedScenarios.forEach(scenarioId => {
-            const scenario = this.data[scenarioId];
-            if (scenario && scenario.projects) {
-                Object.values(scenario.projects).forEach(project => {
-                    projectsMap.set(project.id, project);
-                });
-            }
-        });
-        
-        // Si no hay proyectos en los escenarios seleccionados
-        if (projectsMap.size === 0) {
-            projectsButtons.innerHTML = '<span class="no-tags-message">No hay proyectos en los escenarios seleccionados</span>';
-            return;
-        }
-        
-        // Usar el mismo patrón que updateFilterTags
-        const projects = Array.from(projectsMap.values());
-        projectsButtons.innerHTML = projects.map(project => 
-            `<span class="filter-tag ${this.selectedProjects.has(project.id.toString()) ? 'active' : ''}" 
-                   data-project="${project.id}" 
-                   onclick="taskManager.toggleProjectFilter('${project.id}')">${project.icon} ${project.name}</span>`
-        ).join('');
-        
-        console.log('Proyectos cargados:', projects.map(p => p.id));
-    }
-    
-    toggleScenarioFilter(scenarioId) {
-        if (this.selectedScenarios.has(scenarioId.toString())) {
-            // No permitir deseleccionar si es el único seleccionado
-            if (this.selectedScenarios.size <= 1) {
-                console.log('No se puede deseleccionar: debe quedar al menos un escenario seleccionado');
-                return;
-            }
-            this.selectedScenarios.delete(scenarioId.toString());
-        } else {
-            this.selectedScenarios.add(scenarioId.toString());
-        }
-        
-        // Actualizar visibilidad del escenario
-        const scenarioElement = document.querySelector(`[data-scenario="${scenarioId}"]`);
-        if (scenarioElement) {
-            scenarioElement.classList.toggle('active', this.selectedScenarios.has(scenarioId.toString()));
-        }
-        
-        // Al cambiar escenarios, limpiar proyectos que ya no estén disponibles
-        this.cleanupSelectedProjects();
-        this.loadAssistantProjects();
-        
-        console.log('Escenarios seleccionados:', Array.from(this.selectedScenarios));
-    }
-    
-    toggleProjectFilter(projectId) {
-        if (this.selectedProjects.has(projectId.toString())) {
-            // No permitir deseleccionar si es el único seleccionado
-            if (this.selectedProjects.size <= 1) {
-                console.log('No se puede deseleccionar: debe quedar al menos un proyecto seleccionado');
-                return;
-            }
-            this.selectedProjects.delete(projectId.toString());
-        } else {
-            this.selectedProjects.add(projectId.toString());
-        }
-        
-        // Actualizar visibilidad del proyecto
-        const projectElement = document.querySelector(`[data-project="${projectId}"]`);
-        if (projectElement) {
-            projectElement.classList.toggle('active', this.selectedProjects.has(projectId.toString()));
-        }
-        
-        console.log('Proyectos seleccionados:', Array.from(this.selectedProjects));
-    }
-    
-    // Método obsoleto - ahora usamos toggleScenarioFilter y toggleProjectFilter
-    
-    cleanupSelectedProjects() {
-        // Obtener todos los proyectos disponibles en los escenarios seleccionados
-        const availableProjects = new Set();
-        this.selectedScenarios.forEach(scenarioId => {
-            const scenario = this.data[scenarioId];
-            if (scenario && scenario.projects) {
-                Object.values(scenario.projects).forEach(project => {
-                    availableProjects.add(project.id.toString());
-                });
-            }
-        });
-        
-        // Remover proyectos seleccionados que ya no están disponibles
-        this.selectedProjects.forEach(projectId => {
-            if (!availableProjects.has(projectId)) {
-                this.selectedProjects.delete(projectId);
-            }
-        });
-    }
-    
+    // sendMessage - Inicia Aqui
     sendMessage() {
         const input = document.getElementById('chatInput');
         const message = input.value.trim();
@@ -4142,7 +4200,9 @@ class TaskManager {
         // Llamar a la API real
         this.callAIAPI(message);
     }
+    // sendMessage - Termina Aqui
     
+    // callAIAPI - Inicia Aqui
     async callAIAPI(userMessage) {
         try {
             const context = this.getSelectedContext();
@@ -4179,7 +4239,7 @@ class TaskManager {
 
             const startTime = Date.now();
             
-            // Usar OpenAI API para todos los modelos (como en el original)
+            // Usar OpenAI API para todos los modelos
             const apiUrl = 'https://api.openai.com/v1/chat/completions';
             const headers = {
                 'Content-Type': 'application/json',
@@ -4199,7 +4259,6 @@ class TaskManager {
             this.mensajes = this.mensajes.filter(m => !m.isLoading);
 
             if (!response.ok) {
-                console.error('Error en la API:', data);
                 const errorMessage = data.error ? data.error.message : `Error ${response.status}`;
                 this.mensajes.push({
                     role: 'assistant',
@@ -4290,8 +4349,6 @@ class TaskManager {
             }
 
         } catch (error) {
-            console.error('Error llamando a la API:', error);
-            
             // Remover mensaje de carga
             this.mensajes = this.mensajes.filter(m => !m.isLoading);
             
@@ -4305,8 +4362,9 @@ class TaskManager {
             this.saveAssistantData();
         }
     }
+    // callAIAPI - Termina Aqui
 
-    // ===== FUNCTIONS FOR AI =====
+    // getDataManipulationFunctions - Inicia Aqui
     getDataManipulationFunctions() {
         return [
             {
@@ -4358,333 +4416,303 @@ class TaskManager {
             }
         ];
     }
+    // getDataManipulationFunctions - Termina Aqui
 
-    async manipularDatos(args, context) {
-        const { operacion, tipo, datos = [], escenario } = args;
-        
-        try {
-            // Para Tasks, usar directamente los métodos del TaskManager
-            if (tipo === 'tasks') {
-                switch(operacion) {
-                    case 'agregar':
-                        let results = [];
-                        for (const tarea of datos) {
-                            const parentId = tarea.parentId || null;
-                            
-                            // Crear tarea manualmente para evitar múltiples renderizados
-                            const taskId = this.generateUniqueId();
-                            const newTask = {
-                                id: taskId,
-                                text: tarea.title,
-                                completed: false,
-                                parentId,
-                                children: [],
-                                expanded: true,
-                                depth: this.calculateDepth(parentId),
-                                priority: tarea.priority || 'media',
-                                description: tarea.description || '',
-                                dueDate: tarea.dueDate || null,
-                                repeat: tarea.repeat || null,
-                                repeatCount: tarea.repeatCount || null,
-                                tags: tarea.tags || []
-                            };
-                            
-                            // Configurar completed si se especifica
-                            if (tarea.completed !== undefined) newTask.completed = tarea.completed;
-                            
-                            // Agregar la tarea al lugar correcto
-                            if (parentId) {
-                                const parent = this.findTaskById(parentId);
-                                if (parent) {
-                                    parent.children.push(newTask);
-                                    parent.expanded = true;
-                                }
-                            } else {
-                                this.getCurrentTasks().push(newTask);
-                            }
-                            
-                            const taskType = parentId ? 'Subtarea' : 'Tarea';
-                            const parentInfo = parentId ? ` (subtarea de ID: ${parentId})` : '';
-                            const propsInfo = [];
-                            if (tarea.priority) propsInfo.push(`prioridad: ${tarea.priority}`);
-                            if (tarea.dueDate) propsInfo.push(`fecha: ${tarea.dueDate}`);
-                            if (tarea.tags?.length) propsInfo.push(`etiquetas: ${tarea.tags.join(', ')}`);
-                            const additionalInfo = propsInfo.length ? ` (${propsInfo.join(', ')})` : '';
-                            
-                            results.push(`✅ ${taskType} agregada: "${tarea.title}" (ID: ${newTask.id})${parentInfo}${additionalInfo}`);
-                        }
-                        // Guardar y renderizar una sola vez al final
-                        this.saveAndRender();
-                        return results.join('\n');
-                    
-                    case 'editar':
-                        let editResults = [];
-                        for (const tarea of datos) {
-                            if (tarea.id) {
-                                const task = this.findTaskById(tarea.id);
-                                if (task) {
-                                    if (tarea.title) task.text = tarea.title;
-                                    if (tarea.description !== undefined) task.description = tarea.description;
-                                    if (tarea.priority) task.priority = tarea.priority;
-                                    if (tarea.dueDate !== undefined) task.dueDate = tarea.dueDate;
-                                    if (tarea.repeat !== undefined) task.repeat = tarea.repeat;
-                                    if (tarea.repeatCount !== undefined) task.repeatCount = tarea.repeatCount;
-                                    if (tarea.tags && Array.isArray(tarea.tags)) task.tags = tarea.tags;
-                                    if (tarea.completed !== undefined) task.completed = tarea.completed;
-                                    
-                                    const changes = [];
-                                    if (tarea.title) changes.push(`título: "${tarea.title}"`);
-                                    if (tarea.priority) changes.push(`prioridad: ${tarea.priority}`);
-                                    if (tarea.dueDate !== undefined) changes.push(`fecha: ${tarea.dueDate || 'sin fecha'}`);
-                                    if (tarea.tags?.length) changes.push(`etiquetas: ${tarea.tags.join(', ')}`);
-                                    
-                                    const changesInfo = changes.length ? ` - Cambios: ${changes.join(', ')}` : '';
-                                    editResults.push(`✅ Tarea editada: "${task.text}" (ID: ${task.id})${changesInfo}`);
-                                } else {
-                                    editResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}`);
-                                }
-                            }
-                        }
-                        this.saveAndRender();
-                        return editResults.join('\n');
-                    
-                    case 'eliminar':
-                        let deleteResults = [];
-                        for (const tarea of datos) {
-                            if (tarea.id) {
-                                const task = this.findTaskById(tarea.id);
-                                if (task) {
-                                    this.deleteTaskById(tarea.id);
-                                    deleteResults.push(`✅ Tarea eliminada: "${task.text}" (ID: ${tarea.id})`);
-                                } else {
-                                    deleteResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}`);
-                                }
-                            }
-                        }
-                        return deleteResults.join('\n');
-                    
-                    case 'marcar_completada':
-                    case 'marcar_pendiente':
-                        let toggleResults = [];
-                        const completed = operacion === 'marcar_completada';
-                        for (const tarea of datos) {
-                            if (tarea.id) {
-                                const task = this.findTaskById(tarea.id);
-                                if (task) {
-                                    task.completed = completed;
-                                    toggleResults.push(`✅ Tarea ${completed ? 'completada' : 'marcada como pendiente'}: "${task.text}" (ID: ${task.id})`);
-                                } else {
-                                    toggleResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}`);
-                                }
-                            }
-                        }
-                        this.saveAndRender();
-                        return toggleResults.join('\n');
-                    
-                    case 'obtener':
-                        // Obtener tareas del contexto actual (escenario y proyecto actual)
-                        const currentTasks = this.getCurrentTasks();
-                        const scenarioName = this.data[this.currentScenario]?.name || 'Desconocido';
-                        const projectName = this.data[this.currentScenario]?.projects[this.currentProject]?.name || 'Desconocido';
+    // manipularDatos - Inicia Aqui
+async manipularDatos(args, context) {
+    const { operacion, tipo, datos = [], escenario } = args;
+    
+    try {
+        // Para Tasks, usar directamente los métodos del TaskManager
+        if (tipo === 'tasks') {
+            switch(operacion) {
+                case 'agregar':
+                    let results = [];
+                    for (const tarea of datos) {
+                        const parentId = tarea.parentId || null;
+                        const targetScenario = escenario || this.currentScenario;
+                        const targetProject = tarea.projectId || this.currentProject;
                         
-                        return `📋 Tareas en "${scenarioName}" - "${projectName}": ${currentTasks.length}\n\n${currentTasks.map(t => `• ID: ${t.id} - ${t.text} ${t.completed ? '✅' : '⏳'}`).join('\n')}`;
-                    
-                    default:
-                        return `❌ Operación "${operacion}" no reconocida para tareas`;
-                }
-            }
-            
-            // Para proyectos y escenarios
-            if (tipo === 'projects') {
-                switch(operacion) {
-                    case 'agregar':
-                        let projectResults = [];
-                        for (const proyecto of datos) {
-                            const newProject = {
-                                id: Date.now() + Math.random(),
-                                name: proyecto.title,
-                                color: proyecto.color || '#007bff'
-                            };
-                            // Agregar al escenario actual
-                            this.data[this.currentScenario].projects[newProject.id] = newProject;
-                            this.saveProjectsAndScenarios();
-                            this.loadProjectsAndScenarios();
-                            projectResults.push(`✅ Proyecto agregado: "${proyecto.title}" (ID: ${newProject.id})`);
+                        // Crear tarea manualmente para evitar múltiples renderizados
+                        const taskId = this.generateUniqueId();
+                        const newTask = {
+                            id: taskId,
+                            text: tarea.title,
+                            completed: false,
+                            parentId,
+                            children: [],
+                            expanded: true,
+                            depth: this.calculateDepth(parentId),
+                            priority: tarea.priority || 'media',
+                            description: tarea.description || '',
+                            dueDate: tarea.dueDate || null,
+                            repeat: tarea.repeat || null,
+                            repeatCount: tarea.repeatCount || null,
+                            tags: tarea.tags || []
+                        };
+                        
+                        // Configurar completed si se especifica
+                        if (tarea.completed !== undefined) newTask.completed = tarea.completed;
+                        
+                        // Agregar la tarea al escenario y proyecto especificados
+                        if (parentId) {
+                            const parent = this.findTaskByIdInAllScenarios(parentId);
+                            if (parent) {
+                                parent.children.push(newTask);
+                                parent.expanded = true;
+                            }
+                        } else {
+                            // Asegurar que el escenario y proyecto existan
+                            if (!this.data[targetScenario]) {
+                                results.push(`❌ Escenario ${targetScenario} no encontrado`);
+                                continue;
+                            }
+                            if (!this.data[targetScenario].projects[targetProject]) {
+                                results.push(`❌ Proyecto ${targetProject} no encontrado en escenario ${targetScenario}`);
+                                continue;
+                            }
+                            this.data[targetScenario].projects[targetProject].tasks.push(newTask);
                         }
-                        return projectResults.join('\n');
-                    
-                    case 'obtener':
-                        const projects = Object.values(this.data[this.currentScenario]?.projects || {});
-                        return `📂 Proyectos: ${projects.length}\n\n${projects.map(p => `• ID: ${p.id} - ${p.name}`).join('\n')}`;
-                    
-                    default:
-                        return `❌ Operación "${operacion}" no soportada para proyectos`;
-                }
-            }
-            
-            return `❌ Tipo de datos "${tipo}" no soportado actualmente`;
-            
-        } catch (error) {
-            console.error('Error en manipularDatos:', error);
-            return `❌ Error ejecutando operación: ${error.message}`;
-        }
-    }
-    
-    buildSystemPrompt(context) {
-        // Obtener el prompt base del contexto actual
-        const basePrompt = this.promptContexts[this.currentModule]?.systemPrompt || 
-                          this.promptContexts.general.systemPrompt;
-        
-        let systemPrompt = basePrompt + '\n\n';
-        
-        // Agregar información de fecha y hora
-        const now = new Date();
-        const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
-        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        systemPrompt += `FECHA Y HORA ACTUAL: ${now.toLocaleDateString('es-ES')} a las ${now.toLocaleTimeString('es-ES')}.\n`;
-        systemPrompt += `FECHA ACTUAL ISO: ${today}\n`;
-        systemPrompt += `MAÑANA ISO: ${tomorrow}\n\n`;
-        systemPrompt += `IMPORTANTE: Cuando el usuario diga "mañana", usa la fecha: ${tomorrow}\n`;
-        systemPrompt += `Cuando diga "hoy", usa la fecha: ${today}\n\n`;
-        
-        if (this.currentModule === 'general') {
-            // MÓDULO GENERAL: Acceso completo a toda la base de datos
-            systemPrompt += `BASE DE DATOS COMPLETA:\n`;
-            systemPrompt += `Tienes acceso completo a toda la información del usuario:\n`;
-            systemPrompt += `- Todos los escenarios y sus proyectos\n`;
-            systemPrompt += `- Todas las tareas de todos los contextos\n`;
-            systemPrompt += `- Puedes consultar, crear, editar y eliminar elementos en cualquier contexto\n\n`;
-            systemPrompt += `DATOS DISPONIBLES:\n`;
-            systemPrompt += `${JSON.stringify(this.data, null, 2)}\n\n`;
-            systemPrompt += `Responde basándote en toda esta información disponible.`;
-        } else {
-            // MÓDULO TAREAS: Contexto específico del trabajo actual
-            const currentScenarioName = this.data[this.currentScenario]?.name || 'Por defecto';
-            const currentProjectName = this.data[this.currentScenario]?.projects[this.currentProject]?.name || 'Sin proyecto';
-            systemPrompt += `CONTEXTO DE TRABAJO ACTUAL:\n`;
-            systemPrompt += `- Estás trabajando en el escenario: "${currentScenarioName}"\n`;
-            systemPrompt += `- Proyecto actual: "${currentProjectName}"\n`;
-            systemPrompt += `- Las tareas que menciones o manipules están en este contexto.\n\n`;
-            systemPrompt += `CAPACIDADES COMPLETAS DE GESTIÓN DE TAREAS:\n`;
-            systemPrompt += `- **Crear tareas**: Con título, descripción, prioridad (alta/media/baja), fecha límite\n`;
-            systemPrompt += `- **Crear subtareas**: Usa "parentId" con el ID de la tarea padre\n`;
-            systemPrompt += `- **Etiquetas**: Agrega arrays de tags ["urgente", "trabajo", "personal"]\n`;
-            systemPrompt += `- **Fechas**: SIEMPRE usa formato ISO (YYYY-MM-DD). Para "mañana" usa ${new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}, para "hoy" usa ${today}\n`;
-            systemPrompt += `- **Repeticiones**: daily/weekly/monthly con repeatCount\n`;
-            systemPrompt += `- **Editar todo**: Cambiar cualquier propiedad de tareas existentes\n`;
-            systemPrompt += `- **Estado**: Marcar completadas/pendientes\n`;
-            systemPrompt += `- **Eliminar**: Remover tareas y todas sus subtareas\n\n`;
-            
-            // Agregar contexto seleccionado si está disponible
-            if (context.scenarios.length > 0 || context.projects.length > 0) {
-                systemPrompt += 'CONTEXTO SELECCIONADO:\n';
+                        
+                        const taskType = parentId ? 'Subtarea' : 'Tarea';
+                        const parentInfo = parentId ? ` (subtarea de ID: ${parentId})` : '';
+                        const contextInfo = ` (Escenario: ${this.data[targetScenario]?.name || targetScenario}, Proyecto: ${this.data[targetScenario]?.projects[targetProject]?.name || targetProject})`;
+                        const propsInfo = [];
+                        if (tarea.priority) propsInfo.push(`prioridad: ${tarea.priority}`);
+                        if (tarea.dueDate) propsInfo.push(`fecha: ${tarea.dueDate}`);
+                        if (tarea.tags?.length) propsInfo.push(`etiquetas: ${tarea.tags.join(', ')}`);
+                        const additionalInfo = propsInfo.length ? ` (${propsInfo.join(', ')})` : '';
+                        
+                        results.push(`✅ ${taskType} agregada: "${tarea.title}" (ID: ${newTask.id})${parentInfo}${contextInfo}${additionalInfo}`);
+                    }
+                    // Guardar y renderizar una sola vez al final
+                    this.saveAndRender();
+                    return results.join('\n');
                 
-                if (context.scenarios.length > 0) {
-                    systemPrompt += `- Escenarios seleccionados: ${context.scenarios.map(s => s.name).join(', ')}\n`;
-                }
-                
-                if (context.projects.length > 0) {
-                    systemPrompt += `- Proyectos seleccionados: ${context.projects.map(p => p.name).join(', ')}\n`;
-                    
-                    // Agregar detalles completos de los proyectos
-                    context.projects.forEach(project => {
-                        systemPrompt += `\n**PROYECTO: ${project.name}**\n`;
-                        systemPrompt += `- Descripción: ${project.description}\n`;
-                        if (project.details && project.details.trim()) {
-                            systemPrompt += `- Detalles: ${project.details}\n`;
+                case 'editar':
+                    let editResults = [];
+                    for (const tarea of datos) {
+                        if (tarea.id) {
+                            const task = this.findTaskByIdInAllScenarios(tarea.id);
+                            if (task) {
+                                if (tarea.title) task.text = tarea.title;
+                                if (tarea.description !== undefined) task.description = tarea.description;
+                                if (tarea.priority) task.priority = tarea.priority;
+                                if (tarea.dueDate !== undefined) task.dueDate = tarea.dueDate;
+                                if (tarea.repeat !== undefined) task.repeat = tarea.repeat;
+                                if (tarea.repeatCount !== undefined) task.repeatCount = tarea.repeatCount;
+                                if (tarea.tags && Array.isArray(tarea.tags)) task.tags = tarea.tags;
+                                if (tarea.completed !== undefined) task.completed = tarea.completed;
+                                
+                                const changes = [];
+                                if (tarea.title) changes.push(`título: "${tarea.title}"`);
+                                if (tarea.priority) changes.push(`prioridad: ${tarea.priority}`);
+                                if (tarea.dueDate !== undefined) changes.push(`fecha: ${tarea.dueDate || 'sin fecha'}`);
+                                if (tarea.tags?.length) changes.push(`etiquetas: ${tarea.tags.join(', ')}`);
+                                
+                                const changesInfo = changes.length ? ` - Cambios: ${changes.join(', ')}` : '';
+                                editResults.push(`✅ Tarea editada: "${task.text}" (ID: ${task.id})${changesInfo}`);
+                            } else {
+                                editResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}`);
+                            }
                         }
-                        systemPrompt += `- ID: ${project.id}\n`;
+                    }
+                    this.saveAndRender();
+                    return editResults.join('\n');
+                
+                case 'eliminar':
+                    let deleteResults = [];
+                    for (const tarea of datos) {
+                        if (tarea.id) {
+                            const task = this.findTaskByIdInAllScenarios(tarea.id);
+                            if (task) {
+                                this.removeTaskByIdFromAllScenarios(tarea.id);
+                                deleteResults.push(`✅ Tarea eliminada: "${task.text}" (ID: ${tarea.id})`);
+                            } else {
+                                deleteResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}`);
+                            }
+                        }
+                    }
+                    this.saveAndRender();
+                    return deleteResults.join('\n');
+                
+                case 'marcar_completada':
+                case 'marcar_pendiente':
+                    let toggleResults = [];
+                    const completed = operacion === 'marcar_completada';
+                    for (const tarea of datos) {
+                        if (tarea.id) {
+                            const task = this.findTaskByIdInAllScenarios(tarea.id);
+                            if (task) {
+                                task.completed = completed;
+                                toggleResults.push(`✅ Tarea ${completed ? 'completada' : 'marcada como pendiente'}: "${task.text}" (ID: ${task.id})`);
+                            } else {
+                                toggleResults.push(`❌ No se encontró la tarea con ID: ${tarea.id}`);
+                            }
+                        }
+                    }
+                    this.saveAndRender();
+                    return toggleResults.join('\n');
+                
+                case 'obtener':
+                    // Obtener TODAS las tareas de TODOS los escenarios y proyectos
+                    let allTasksText = '';
+                    Object.values(this.data).forEach(scenario => {
+                        allTasksText += `\n📁 ESCENARIO: ${scenario.name}\n`;
+                        if (scenario.projects) {
+                            Object.values(scenario.projects).forEach(project => {
+                                const tasks = project.tasks || [];
+                                allTasksText += `  📋 ${project.name}: ${tasks.length} tareas\n`;
+                                tasks.forEach(task => {
+                                    allTasksText += `    • ID: ${task.id} - ${task.text} ${task.completed ? '✅' : '⏳'}\n`;
+                                });
+                            });
+                        }
                     });
-                }
+                    
+                    return `📊 RESUMEN COMPLETO DE TAREAS:${allTasksText}`;
                 
-                // Agregar información de tareas relacionadas
-                const relatedTasks = this.getTasksFromContext(context);
-                if (relatedTasks.length > 0) {
-                    systemPrompt += `- Tareas relacionadas: ${relatedTasks.length} tareas disponibles\n`;
-                }
+                default:
+                    return `❌ Operación "${operacion}" no reconocida para tareas`;
+            }
+        }
+        
+        // Para proyectos y escenarios
+        if (tipo === 'projects') {
+            switch(operacion) {
+                case 'agregar':
+                    let projectResults = [];
+                    for (const proyecto of datos) {
+                        const targetScenario = escenario || this.currentScenario;
+                        const newProject = {
+                            id: this.projectIdCounter++,
+                            name: proyecto.title,
+                            description: proyecto.description || '',
+                            icon: proyecto.icon || '📁',
+                            tasks: []
+                        };
+                        // Agregar al escenario especificado
+                        if (!this.data[targetScenario]) {
+                            projectResults.push(`❌ Escenario ${targetScenario} no encontrado`);
+                            continue;
+                        }
+                        this.data[targetScenario].projects[newProject.id] = newProject;
+                        projectResults.push(`✅ Proyecto agregado: "${proyecto.title}" (ID: ${newProject.id}) en escenario "${this.data[targetScenario].name}"`);
+                    }
+                    this.saveData();
+                    this.updateSelectors();
+                    this.render();
+                    return projectResults.join('\n');
                 
-                systemPrompt += '\n';
-            }
-            
-            systemPrompt += 'Responde de manera útil y concisa basándote en este contexto específico.';
-        }
-        
-        return systemPrompt;
-    }
-    
-    generateContextualResponse(userMessage) {
-        const context = this.getSelectedContext();
-        const hasContext = context.scenarios.length > 0 || context.projects.length > 0;
-        
-        // Obtener el prompt del contexto actual
-        const contextPrompt = this.promptContexts[this.currentModule]?.systemPrompt || this.promptContexts.general.systemPrompt;
-        
-        // Construir contexto de tareas si está disponible
-        let contextInfo = '';
-        if (this.currentModule === 'tasks' && hasContext) {
-            const scenarioNames = context.scenarios.map(s => s.name).join(', ');
-            const projectNames = context.projects.map(p => p.name).join(', ');
-            
-            contextInfo = `\n\nContexto actual:
-- Escenarios: ${scenarioNames || 'Ninguno'}
-- Proyectos: ${projectNames || 'Ninguno'}`;
-            
-            // Obtener tareas relacionadas
-            const relatedTasks = this.getTasksFromContext(context);
-            if (relatedTasks.length > 0) {
-                contextInfo += `\n- Tareas relacionadas: ${relatedTasks.length} tareas encontradas`;
+                case 'obtener':
+                    let allProjectsText = '';
+                    Object.values(this.data).forEach(scenario => {
+                        allProjectsText += `\n📁 ESCENARIO: ${scenario.name}\n`;
+                        if (scenario.projects) {
+                            Object.values(scenario.projects).forEach(project => {
+                                allProjectsText += `  📋 ID: ${project.id} - ${project.name}\n`;
+                            });
+                        }
+                    });
+                    return `📂 TODOS LOS PROYECTOS:${allProjectsText}`;
+                
+                default:
+                    return `❌ Operación "${operacion}" no soportada para proyectos`;
             }
         }
         
-        return `Siguiendo mi configuración: "${contextPrompt}"
-
-Tu consulta: "${userMessage}"${contextInfo}
-
-Esta es una respuesta de ejemplo basada en el prompt personalizado. Para obtener respuestas reales de IA:
-
-1. Configura tu API Key
-2. Integra con OpenAI/Anthropic API
-3. El sistema enviará el prompt personalizado + contexto + tu mensaje
-
-Configuración actual:
-• Modelo: ${this.aiStats.currentModel}
-• Prompt activo: ${this.currentModule === 'general' ? 'General' : 'Tareas'}
-• Tokens estimados: ~${Math.ceil(userMessage.length / 4)} entrada`;
-    }
-    
-    getTasksFromContext(context) {
-        const tasks = [];
+        return `❌ Tipo de datos "${tipo}" no soportado actualmente`;
         
-        // Buscar tareas en los escenarios y proyectos seleccionados
-        context.scenarios.forEach(scenario => {
-            context.projects.forEach(project => {
-                if (scenario.projects && scenario.projects[project.id] && scenario.projects[project.id].tasks) {
-                    tasks.push(...scenario.projects[project.id].tasks);
+    } catch (error) {
+        return `❌ Error ejecutando operación: ${error.message}`;
+    }
+}
+// manipularDatos - Termina Aqui
+
+// findTaskByIdInAllScenarios - Inicia Aqui
+findTaskByIdInAllScenarios(taskId) {
+    // Buscar en todos los escenarios y proyectos
+    for (const scenario of Object.values(this.data)) {
+        if (scenario.projects) {
+            for (const project of Object.values(scenario.projects)) {
+                if (project.tasks) {
+                    const found = this.findTaskById(taskId, project.tasks);
+                    if (found) return found;
                 }
-            });
-        });
-        
-        return tasks;
-    }
-    
-    getSelectedContext() {
-        const context = {
-            scenarios: [],
-            projects: []
-        };
-        
-        // Usar directamente el contexto actual
-        if (this.data[this.currentScenario]) {
-            context.scenarios.push(this.data[this.currentScenario]);
-            
-            if (this.data[this.currentScenario].projects[this.currentProject]) {
-                context.projects.push(this.data[this.currentScenario].projects[this.currentProject]);
             }
         }
-        
-        return context;
     }
+    return null;
+}
+// findTaskByIdInAllScenarios - Termina Aqui
+
+// removeTaskByIdFromAllScenarios - Inicia Aqui
+removeTaskByIdFromAllScenarios(taskId) {
+    // Buscar y eliminar en todos los escenarios y proyectos
+    for (const scenario of Object.values(this.data)) {
+        if (scenario.projects) {
+            for (const project of Object.values(scenario.projects)) {
+                if (project.tasks) {
+                    project.tasks = this.filterTasks(project.tasks, taskId);
+                }
+            }
+        }
+    }
+}
+// removeTaskByIdFromAllScenarios - Termina Aqui
+
+    // buildSystemPrompt - Inicia Aqui
+buildSystemPrompt(context) {
+    // Obtener el prompt base del contexto general
+    const basePrompt = this.promptContexts.general.systemPrompt;
     
+    let systemPrompt = basePrompt + '\n\n';
+    
+    // Agregar información de fecha y hora
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    systemPrompt += `FECHA Y HORA ACTUAL: ${now.toLocaleDateString('es-ES')} a las ${now.toLocaleTimeString('es-ES')}.\n`;
+    systemPrompt += `FECHA ACTUAL ISO: ${today}\n`;
+    systemPrompt += `MAÑANA ISO: ${tomorrow}\n\n`;
+    systemPrompt += `IMPORTANTE: Cuando el usuario diga "mañana", usa la fecha: ${tomorrow}\n`;
+    systemPrompt += `Cuando diga "hoy", usa la fecha: ${today}\n\n`;
+    
+    // MODO GENERAL: Acceso completo a toda la base de datos
+    systemPrompt += `BASE DE DATOS COMPLETA:\n`;
+    systemPrompt += `Tienes acceso completo a toda la información del usuario:\n`;
+    systemPrompt += `- Todos los escenarios y sus proyectos\n`;
+    systemPrompt += `- Todas las tareas de todos los contextos\n`;
+    systemPrompt += `- Puedes consultar, crear, editar y eliminar elementos en cualquier contexto\n\n`;
+    systemPrompt += `DATOS DISPONIBLES:\n`;
+    systemPrompt += `${JSON.stringify(this.data, null, 2)}\n\n`;
+    systemPrompt += `Responde basándote en toda esta información disponible.`;
+    
+    return systemPrompt;
+}
+// buildSystemPrompt - Termina Aqui
+    
+    // getSelectedContext - Inicia Aqui
+getSelectedContext() {
+    // En modo general, devolver toda la base de datos
+    const context = {
+        scenarios: Object.values(this.data),
+        projects: [],
+        allData: this.data
+    };
+    
+    // Agregar todos los proyectos de todos los escenarios
+    Object.values(this.data).forEach(scenario => {
+        if (scenario.projects) {
+            context.projects.push(...Object.values(scenario.projects));
+        }
+    });
+    
+    return context;
+}
+// getSelectedContext - Termina Aqui
+    
+    // renderChatMessages - Inicia Aqui
     renderChatMessages() {
         const container = document.getElementById('chatMessages');
         if (!container) return;
@@ -4713,7 +4741,9 @@ Configuración actual:
         
         container.scrollTop = container.scrollHeight;
     }
+    // renderChatMessages - Termina Aqui
     
+    // saveAssistantData - Inicia Aqui
     saveAssistantData() {
         try {
             localStorage.setItem('taskTreeAIConfig', JSON.stringify(this.aiConfig));
@@ -4721,149 +4751,74 @@ Configuración actual:
             localStorage.setItem('taskTreeAIMessages', JSON.stringify(this.mensajes));
             this.savePromptContexts();
         } catch (error) {
-            console.error('Error guardando datos del asistente:', error);
+            // Error guardando datos del asistente
         }
     }
+    // saveAssistantData - Termina Aqui
     
-    toggleAllSelection(type) {
-        const container = document.getElementById(`${type}-buttons`);
-        if (!container) return;
-        
-        const allTags = container.querySelectorAll('.filter-tag');
-        const allSelected = Array.from(allTags).every(tag => tag.classList.contains('active'));
-        
-        if (allSelected) {
-            // Si todos están seleccionados, deseleccionar todos menos el primero
-            let isFirst = true;
-            allTags.forEach(tag => {
-                if (type === 'scenarios') {
-                    const scenarioId = tag.dataset.scenario;
-                    if (scenarioId && !isFirst) {
-                        this.selectedScenarios.delete(scenarioId.toString());
-                        tag.classList.remove('active');
-                    }
-                } else if (type === 'projects') {
-                    const projectId = tag.dataset.project;
-                    if (projectId && !isFirst) {
-                        this.selectedProjects.delete(projectId.toString());
-                        tag.classList.remove('active');
-                    }
-                }
-                isFirst = false;
-            });
-        } else {
-            // Seleccionar todos
-            allTags.forEach(tag => {
-                if (type === 'scenarios') {
-                    const scenarioId = tag.dataset.scenario;
-                    if (scenarioId && !this.selectedScenarios.has(scenarioId)) {
-                        this.toggleScenarioFilter(scenarioId);
-                    }
-                } else if (type === 'projects') {
-                    const projectId = tag.dataset.project;
-                    if (projectId && !this.selectedProjects.has(projectId)) {
-                        this.toggleProjectFilter(projectId);
-                    }
-                }
-            });
-        }
-    }
-    
+    // showAIConfigModal - Inicia Aqui
     showAIConfigModal() {
-        const promptContextOptions = Object.values(this.promptContexts).map(context => 
-            `<option value="${context.id}">${context.icon} ${context.name}</option>`
-        ).join('');
-
         const modalContent = `
             <div class="ai-config-modal">
-                <div class="config-tabs">
-                    <button class="config-tab active" data-tab="general" onclick="taskManager.switchConfigTab('general')">🔧 General</button>
-                    <button class="config-tab" data-tab="prompts" onclick="taskManager.switchConfigTab('prompts')">💬 Prompts</button>
+                <h3>Configuración del Asistente IA</h3>
+                
+                <div class="config-section">
+                    <label for="ai-api-key">API Key:</label>
+                    <input type="password" id="ai-api-key" value="${this.aiConfig.apiKey}" 
+                           placeholder="Introduce tu API Key">
                 </div>
                 
-                <!-- Tab General -->
-                <div id="config-tab-general" class="config-tab-content active">
-                    <h3>Configuración General</h3>
-                    
-                    <div class="config-section">
-                        <label for="ai-api-key">API Key:</label>
-                        <input type="password" id="ai-api-key" value="${this.aiConfig.apiKey}" 
-                               placeholder="Introduce tu API Key">
-                    </div>
-                    
-                    <div class="config-section">
-                        <label for="ai-model">Modelo:</label>
-                        <select id="ai-model">
-                            <option value="gpt-5-nano" ${this.aiConfig.model === 'gpt-5-nano' ? 'selected' : ''}>
-                                GPT-5 Nano ($0.00005/$0.0004 por 1K tokens)
-                            </option>
-                            <option value="gpt-5-mini" ${this.aiConfig.model === 'gpt-5-mini' ? 'selected' : ''}>
-                                GPT-5 Mini ($0.00025/$0.002 por 1K tokens)
-                            </option>
-                            <option value="gpt-5" ${this.aiConfig.model === 'gpt-5' ? 'selected' : ''}>
-                                GPT-5 ($0.00125/$0.01 por 1K tokens)
-                            </option>
-                        </select>
-                    </div>
-                    
-                    <div class="config-section">
-                        <label for="ai-max-tokens">Máximo de Tokens:</label>
-                        <input type="number" id="ai-max-tokens" value="${this.aiConfig.maxTokens}" 
-                               min="100" max="4000" step="100">
-                    </div>
-                    
-                    <div class="config-section">
-                        <label for="ai-temperature">Creatividad (Temperature):</label>
-                        <input type="range" id="ai-temperature" value="${this.aiConfig.temperature}" 
-                               min="0" max="1" step="0.1">
-                        <span class="range-value">${this.aiConfig.temperature}</span>
-                    </div>
-                    
-                    <div class="config-section">
-                        <label for="ai-history-limit">Límite del Historial:</label>
-                        <input type="number" id="ai-history-limit" value="${this.aiConfig.historyLimit}" 
-                               min="5" max="50" step="5">
-                    </div>
+                <div class="config-section">
+                    <label for="ai-model">Modelo:</label>
+                    <select id="ai-model">
+                        <option value="gpt-5-nano" ${this.aiConfig.model === 'gpt-5-nano' ? 'selected' : ''}>
+                            GPT-5 Nano ($0.00005/$0.0004 por 1K tokens)
+                        </option>
+                        <option value="gpt-5-mini" ${this.aiConfig.model === 'gpt-5-mini' ? 'selected' : ''}>
+                            GPT-5 Mini ($0.00025/$0.002 por 1K tokens)
+                        </option>
+                        <option value="gpt-5" ${this.aiConfig.model === 'gpt-5' ? 'selected' : ''}>
+                            GPT-5 ($0.00125/$0.01 por 1K tokens)
+                        </option>
+                    </select>
                 </div>
                 
-                <!-- Tab Prompts -->
-                <div id="config-tab-prompts" class="config-tab-content">
-                    <h3>Configuración de Prompts</h3>
-                    
-                    <div class="config-section">
-                        <label for="prompt-context-select">Contexto:</label>
-                        <select id="prompt-context-select" onchange="taskManager.loadPromptForContext(this.value)">
-                            ${promptContextOptions}
-                        </select>
-                    </div>
-                    
-                    <div class="config-section">
-                        <label for="system-prompt-input">System Prompt:</label>
-                        <textarea id="system-prompt-input" rows="6" 
-                                  placeholder="Escribe el prompt del sistema para este contexto...">${this.promptContexts[this.currentModule]?.systemPrompt || this.promptContexts.general.systemPrompt}</textarea>
-                        <small class="help-text">Este prompt define cómo se comportará el asistente en este contexto específico.</small>
-                    </div>
-                    
-                    <div class="prompt-actions">
-                        <button type="button" class="btn-secondary" onclick="taskManager.resetPromptToDefault()">
-                            🔄 Restaurar por defecto
-                        </button>
-                        <button type="button" class="btn-primary" onclick="taskManager.savePromptForContext()">
-                            💾 Guardar Prompt
-                        </button>
-                    </div>
+                <div class="config-section">
+                    <label for="ai-max-tokens">Máximo de Tokens:</label>
+                    <input type="number" id="ai-max-tokens" value="${this.aiConfig.maxTokens}" 
+                           min="100" max="4000" step="100">
+                </div>
+                
+                <div class="config-section">
+                    <label for="ai-temperature">Creatividad (Temperature):</label>
+                    <input type="range" id="ai-temperature" value="${this.aiConfig.temperature}" 
+                           min="0" max="1" step="0.1">
+                    <span class="range-value">${this.aiConfig.temperature}</span>
+                </div>
+                
+                <div class="config-section">
+                    <label for="ai-history-limit">Límite del Historial:</label>
+                    <input type="number" id="ai-history-limit" value="${this.aiConfig.historyLimit}" 
+                           min="5" max="50" step="5">
+                </div>
+                
+                <div class="config-section">
+                    <label for="system-prompt-input">System Prompt:</label>
+                    <textarea id="system-prompt-input" rows="6" 
+                              placeholder="Escribe el prompt del sistema...">${this.promptContexts.general.systemPrompt}</textarea>
+                    <small class="help-text">Este prompt define cómo se comportará el asistente.</small>
                 </div>
                 
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="taskManager.hideModal()">Cancelar</button>
-                    <button type="button" class="btn-primary" onclick="taskManager.saveAIConfig()">Guardar Todo</button>
+                    <button type="button" class="btn-primary" onclick="taskManager.saveAIConfig()">Guardar</button>
                 </div>
             </div>
         `;
         
         this.showAssistantModal('Configuración IA', modalContent);
         
-        // Actualizar valor de temperatura en tiempo real (con setTimeout para asegurar que el DOM esté listo)
+        // Actualizar valor de temperatura en tiempo real
         setTimeout(() => {
             const temperatureRange = document.getElementById('ai-temperature');
             const temperatureValue = document.querySelector('.range-value');
@@ -4874,13 +4829,16 @@ Configuración actual:
             }
         }, 100);
     }
+    // showAIConfigModal - Termina Aqui
     
+    // saveAIConfig - Inicia Aqui
     saveAIConfig() {
         const apiKey = document.getElementById('ai-api-key').value;
         const model = document.getElementById('ai-model').value;
         const maxTokens = parseInt(document.getElementById('ai-max-tokens').value);
         const temperature = parseFloat(document.getElementById('ai-temperature').value);
         const historyLimit = parseInt(document.getElementById('ai-history-limit').value);
+        const systemPrompt = document.getElementById('system-prompt-input').value.trim();
         
         this.aiConfig = {
             apiKey,
@@ -4889,6 +4847,11 @@ Configuración actual:
             temperature,
             historyLimit
         };
+        
+        // Actualizar system prompt
+        if (systemPrompt) {
+            this.promptContexts.general.systemPrompt = systemPrompt;
+        }
         
         // Actualizar modelo actual en estadísticas
         const modelNames = {
@@ -4904,83 +4867,9 @@ Configuración actual:
         // Mostrar confirmación
         this.showNotification('Configuración guardada correctamente', 'success');
     }
+    // saveAIConfig - Termina Aqui
     
-    switchConfigTab(tabName) {
-        // Cambiar tabs activos
-        document.querySelectorAll('.config-tab').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.tab === tabName);
-        });
-        
-        // Cambiar contenido activo
-        document.querySelectorAll('.config-tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `config-tab-${tabName}`);
-        });
-    }
-    
-    loadPromptForContext(contextId) {
-        const promptInput = document.getElementById('system-prompt-input');
-        if (!promptInput) return;
-        
-        if (this.promptContexts[contextId]) {
-            promptInput.value = this.promptContexts[contextId].systemPrompt || '';
-        } else {
-            promptInput.value = '';
-        }
-    }
-    
-    savePromptForContext() {
-        const contextSelect = document.getElementById('prompt-context-select');
-        const promptInput = document.getElementById('system-prompt-input');
-        
-        if (!contextSelect || !promptInput) return;
-        
-        const contextId = contextSelect.value;
-        const newPrompt = promptInput.value.trim();
-        
-        if (!newPrompt) {
-            this.showNotification('El prompt no puede estar vacío', 'error');
-            return;
-        }
-        
-        // Actualizar el prompt en el contexto
-        if (this.promptContexts[contextId]) {
-            this.promptContexts[contextId].systemPrompt = newPrompt;
-        }
-        
-        // Guardar en localStorage
-        this.savePromptContexts();
-        
-        this.showNotification('Prompt guardado correctamente', 'success');
-    }
-    
-    resetPromptToDefault() {
-        const contextSelect = document.getElementById('prompt-context-select');
-        const promptInput = document.getElementById('system-prompt-input');
-        
-        if (!contextSelect || !promptInput) return;
-        
-        const contextId = contextSelect.value;
-        
-        // Prompts por defecto
-        const defaultPrompts = {
-            general: 'Eres un asistente útil y amigable. Ayuda al usuario con cualquier consulta de manera clara y concisa.',
-            tasks: 'Eres un asistente especializado en gestión de tareas y productividad. Ayuda al usuario a organizar, planificar y completar sus tareas de manera eficiente.'
-        };
-        
-        if (defaultPrompts[contextId]) {
-            promptInput.value = defaultPrompts[contextId];
-            this.showNotification('Prompt restaurado por defecto', 'success');
-        }
-    }
-    
-    savePromptContexts() {
-        try {
-            localStorage.setItem('taskTreeAIPrompts', JSON.stringify(this.promptContexts));
-        } catch (error) {
-            console.error('Error guardando prompts:', error);
-        }
-    }
-    
+    // showAIStatsModal - Inicia Aqui
     showAIStatsModal() {
         const today = new Date().toDateString();
         if (this.aiStats.lastResetDate !== today) {
@@ -5051,14 +4940,15 @@ Configuración actual:
         
         this.showAssistantModal('Estadísticas IA', modalContent);
     }
+    // showAIStatsModal - Termina Aqui
     
+    // showAssistantModal - Inicia Aqui
     showAssistantModal(title, content) {
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modal-title');
         const modalBody = document.getElementById('modal-body');
         
         if (!modal || !modalTitle || !modalBody) {
-            console.error('Modal elements not found');
             return;
         }
         
@@ -5069,7 +4959,9 @@ Configuración actual:
         // Hacer focus en el modal para accesibilidad
         modal.focus();
     }
+    // showAssistantModal - Termina Aqui
     
+    // exportAIStats - Inicia Aqui
     exportAIStats() {
         const statsData = {
             fecha: new Date().toISOString(),
@@ -5090,7 +4982,9 @@ Configuración actual:
         URL.revokeObjectURL(url);
         this.showNotification('Estadísticas exportadas correctamente', 'success');
     }
+    // exportAIStats - Termina Aqui
     
+    // clearAIStats - Inicia Aqui
     clearAIStats() {
         if (confirm('¿Estás seguro de que quieres limpiar todas las estadísticas? Esta acción no se puede deshacer.')) {
             this.aiStats = {
@@ -5107,7 +5001,9 @@ Configuración actual:
             this.showNotification('Estadísticas limpiadas correctamente', 'success');
         }
     }
+    // clearAIStats - Termina Aqui
     
+    // updateAIStats - Inicia Aqui
     updateAIStats(inputTokens, outputTokens) {
         const model = this.aiConfig.model;
         const pricing = this.modelPricing[model];
@@ -5138,13 +5034,12 @@ Configuración actual:
             this.saveAssistantData();
         }
     }
+    // updateAIStats - Termina Aqui
     
-    // ===== FUNCIONES CRUD ADICIONALES =====
-    
+    // exportChatHistory - Inicia Aqui
     exportChatHistory() {
         const chatData = {
             fecha: new Date().toISOString(),
-            modulo: this.currentModule,
             mensajes: this.mensajes,
             configuracion: {
                 model: this.aiConfig.model,
@@ -5160,13 +5055,15 @@ Configuración actual:
         
         const link = document.createElement('a');
         link.href = url;
-        link.download = `tasktree-chat-${this.currentModule}-${new Date().toISOString().split('T')[0]}.json`;
+        link.download = `tasktree-chat-${new Date().toISOString().split('T')[0]}.json`;
         link.click();
         
         URL.revokeObjectURL(url);
         this.showNotification('Historial de chat exportado', 'success');
     }
+    // exportChatHistory - Termina Aqui
     
+    // clearChatHistory - Inicia Aqui
     clearChatHistory() {
         if (confirm('¿Estás seguro de que quieres borrar todo el historial del chat? Esta acción no se puede deshacer.')) {
             this.mensajes = [];
@@ -5175,7 +5072,9 @@ Configuración actual:
             this.showNotification('Historial de chat limpiado', 'success');
         }
     }
+    // clearChatHistory - Termina Aqui
     
+    // importChatHistory - Inicia Aqui
     importChatHistory() {
         const input = document.createElement('input');
         input.type = 'file';
@@ -5204,7 +5103,9 @@ Configuración actual:
         };
         input.click();
     }
+    // importChatHistory - Termina Aqui
     
+    // searchInChat - Inicia Aqui
     searchInChat(query) {
         if (!query.trim()) {
             this.renderChatMessages();
@@ -5236,12 +5137,16 @@ Configuración actual:
         
         container.scrollTop = container.scrollHeight;
     }
+    // searchInChat - Termina Aqui
     
+    // highlightSearchTerm - Inicia Aqui
     highlightSearchTerm(text, term) {
         const regex = new RegExp(`(${term})`, 'gi');
         return text.replace(regex, '<mark>$1</mark>');
     }
+    // highlightSearchTerm - Termina Aqui
     
+    // copyToClipboard - Inicia Aqui
     copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
             this.showNotification('Copiado al portapapeles', 'success');
@@ -5249,59 +5154,76 @@ Configuración actual:
             this.showNotification('Error al copiar', 'error');
         });
     }
+    // copyToClipboard - Termina Aqui
     
+    // showNotification - Inicia Aqui
     showNotification(message, type = 'info') {
-        // Buscar si ya existe una función de notificación
-        if (typeof this.showToast === 'function') {
-            this.showToast(message, type);
+        // Fallback simple
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        
+        if (type === 'success') {
+            notification.style.background = '#10b981';
+        } else if (type === 'error') {
+            notification.style.background = '#ef4444';
         } else {
-            // Fallback simple
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 12px 20px;
-                border-radius: 8px;
-                color: white;
-                font-weight: 500;
-                z-index: 10000;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-            `;
-            
-            if (type === 'success') {
-                notification.style.background = '#10b981';
-            } else if (type === 'error') {
-                notification.style.background = '#ef4444';
-            } else {
-                notification.style.background = '#3b82f6';
-            }
-            
-            document.body.appendChild(notification);
-            
-            // Animar entrada
-            setTimeout(() => notification.style.opacity = '1', 10);
-            
-            // Remover después de 3 segundos
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
+            notification.style.background = '#3b82f6';
+        }
+        
+        document.body.appendChild(notification);
+        
+        // Animar entrada
+        setTimeout(() => notification.style.opacity = '1', 10);
+        
+        // Remover después de 3 segundos
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+    // showNotification - Termina Aqui
+
+    // savePromptContexts - Inicia Aqui
+    savePromptContexts() {
+        try {
+            localStorage.setItem('taskTreeAIPrompts', JSON.stringify(this.promptContexts));
+        } catch (error) {
+            // Error guardando prompts
         }
     }
-}
+    // savePromptContexts - Termina Aqui
 
-// === INICIALIZACIÓN ===
+    // deleteTaskById - Inicia Aqui
+    deleteTaskById(taskId) {
+        this.removeTaskById(taskId);
+        this.saveAndRender();
+    }
+    // deleteTaskById - Termina Aqui
+}
+// TaskManager Class - Termina Aqui
+
+// Inicialización - Inicia Aqui
 let taskManager;
 
 document.addEventListener('DOMContentLoaded', () => {
     taskManager = new TaskManager();
 });
+// Inicialización - Termina Aqui
 
-// === FUNCIONES GLOBALES PARA COMPATIBILIDAD ===
+// Funciones globales para compatibilidad - Inicia Aqui
 function showAddScenarioForm() {
     taskManager.showItemForm('scenario');
 }
@@ -5337,3 +5259,4 @@ function hideProjectModal() {
 function hideEditTaskModal() {
     taskManager.hideModal();
 }
+// Funciones globales para compatibilidad - Termina Aqui
